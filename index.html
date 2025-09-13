@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trendo - Gestione Pronostici</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Libreria per leggere i file XLSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .win { background-color: #dcfce7; color: #166534; }
+        .lose { background-color: #fee2e2; color: #991b1b; }
+        .pending { background-color: #fef9c3; color: #854d0e; }
+        .fetching { background-color: #e0e7ff; color: #3730a3; }
+        .table-cell { padding: 0.75rem; vertical-align: middle; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div id="loader-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+            <div class="loader mx-auto mb-4"></div>
+            <p id="loader-text" class="text-lg font-medium text-gray-700">Elaborazione in corso...</p>
+        </div>
+    </div>
+    
+    <!-- Modal Generico -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-left max-w-lg w-full m-4">
+            <div class="flex justify-between items-start">
+                <h3 id="modal-title" class="text-xl font-bold text-gray-800"></h3>
+                <button id="modal-close-btn-x" class="text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div id="modal-body" class="text-md text-gray-700 my-4"></div>
+            <div class="text-right mt-6">
+                 <button id="modal-close-btn" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Trendo - Gestione Pronostici</h1>
+            <p class="text-lg text-gray-600 mt-2">Importa i tuoi pronostici e aggiorna i risultati con un click.</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Pannello di Controllo</h2>
+            <div class="flex flex-col md:flex-row gap-4 items-center">
+                <!-- Sezione Importazione -->
+                <div class="flex-1 w-full">
+                    <label for="file-uploader" class="block text-sm font-medium text-gray-700 mb-1">1. Carica il tuo file (.xlsx o .csv)</label>
+                    <input type="file" id="file-uploader" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
+                </div>
+                <button id="import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm disabled:bg-gray-400" disabled>
+                    Importa Dati
+                </button>
+
+                <!-- Sezione Aggiornamento -->
+                <div class="border-t md:border-t-0 md:border-l border-gray-200 my-4 md:my-0 md:mx-4 h-auto md:h-12"></div>
+                
+                <div class="flex-1 w-full text-center md:text-left">
+                     <p class="text-sm font-medium text-gray-700 mb-1">2. Aggiorna Risultati</p>
+                    <p class="text-xs text-gray-500 mb-2">Cerca i risultati per le partite passate e non ancora definite.</p>
+                </div>
+                <button id="fetch-results-btn" class="w-full md:w-auto bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm disabled:bg-gray-400" disabled>
+                    ✨ Aggiorna Risultati
+                </button>
+            </div>
+             <p id="user-id-display" class="text-xs text-gray-400 mt-4 text-center"></p>
+        </div>
+
+        <!-- Tabella Pronostici -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Le righe verranno inserite qui da JavaScript -->
+                        <tr><td colspan="5" class="text-center p-8 text-gray-500">Connessione a Firebase in corso...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- CONFIGURAZIONE FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTPCU1Cwg3U3qcGmrhg_Vr6NBL1kgZrrw",
+            authDomain: "trend-betmines.firebaseapp.com",
+            projectId: "trend-betmines",
+            storageBucket: "trend-betmines.firebasestorage.app",
+            messagingSenderId: "1075169451180",
+            appId: "1:1075169451180:web:57f32cc1fcade158ebd309"
+        };
+        
+        // --- Import delle librerie Firebase ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Inizializzazione ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // --- Variabili Globali ---
+        let userId = null;
+        const TIPS_COLLECTION = 'pronostici-sportivi';
+        const MESE = { "gen":1,"feb":2,"mar":3,"apr":4,"mag":5,"giu":6,"lug":7,"ago":8,"set":9,"ott":10,"nov":11,"dic":12 };
+
+        // --- Elementi del DOM ---
+        const fileUploader = document.getElementById('file-uploader');
+        const importBtn = document.getElementById('import-btn');
+        const fetchResultsBtn = document.getElementById('fetch-results-btn');
+        const tipsTableBody = document.getElementById('tips-table-body');
+        const loaderOverlay = document.getElementById('loader-overlay');
+        const loaderText = document.getElementById('loader-text');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalCloseBtnX = document.getElementById('modal-close-btn-x');
+
+        // --- Funzioni di Utility ---
+        const showLoader = (text) => {
+            loaderText.textContent = text;
+            loaderOverlay.classList.remove('hidden');
+        };
+        const hideLoader = () => {
+            loaderOverlay.classList.add('hidden');
+        };
+
+        const showModal = (title, message, type = 'info') => {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = message;
+            
+            const titleBaseClasses = 'text-xl font-bold';
+            const buttonBaseClasses = 'text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 shadow-sm';
+            
+            if (type === 'error') {
+                modalTitle.className = `${titleBaseClasses} text-red-700`;
+                modalCloseBtn.className = `${buttonBaseClasses} bg-red-600 hover:bg-red-700`;
+            } else {
+                modalTitle.className = `${titleBaseClasses} text-gray-800`;
+                modalCloseBtn.className = `${buttonBaseClasses} bg-violet-600 hover:bg-violet-700`;
+            }
+            
+            modal.classList.remove('hidden');
+        };
+
+        const hideModal = () => {
+            modal.classList.add('hidden');
+        }
+
+        modalCloseBtn.addEventListener('click', hideModal);
+        modalCloseBtnX.addEventListener('click', hideModal);
+
+        function estraiDataOra(txt) {
+            if (!txt || typeof txt !== 'string') return null;
+            const dateRegex = /(\d{1,2})\s+([a-zà]+)\s+(\d{4})/;
+            const timeRegex = /(\d{1,2}:\d{2})/;
+            const dateMatch = txt.match(dateRegex);
+            const timeMatch = txt.match(timeRegex);
+
+            if (!dateMatch) return null;
+            
+            const g = parseInt(dateMatch[1]);
+            const meseStr = dateMatch[2].substring(0, 3).toLowerCase();
+            const anno = parseInt(dateMatch[3]);
+            const mese = MESE[meseStr];
+
+            if (!mese) return null;
+            
+            const [ore, minuti] = timeMatch ? timeMatch[1].split(':').map(Number) : [0, 0];
+            
+            const date = new Date(anno, mese - 1, g, ore, minuti);
+            return date;
+        }
+
+        // --- Autenticazione ---
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                userId = user.uid;
+                document.getElementById('user-id-display').textContent = `UserID: ${userId}`;
+                importBtn.disabled = false;
+                fetchResultsBtn.disabled = false;
+                listenToTips();
+            } else {
+                signInAnonymously(auth).catch(error => {
+                    console.error("Errore di autenticazione anonima:", error);
+                    let friendlyMessage = '';
+
+                    if (error.message && error.message.includes('requests-from-referer')) {
+                        const blockedUrlMatch = error.message.match(/https?:\/\/[^\s)]+/);
+                        const blockedUrl = blockedUrlMatch ? new URL(blockedUrlMatch[0]).hostname : 'il-tuo-dominio.com';
+                        
+                        friendlyMessage = `
+                            <p class="font-semibold text-lg mb-2">Siamo all'ultimo passo!</p>
+                            <p class="mb-4">Per sicurezza, Firebase permette l'accesso solo da indirizzi web autorizzati. Dobbiamo aggiungere quello che stai usando adesso.</p>
+                            <p class="font-semibold mb-2">Segui questi 3 passaggi:</p>
+                            <ol class="list-decimal list-inside space-y-2">
+                                <li>
+                                    Vai alla pagina di autenticazione di Firebase:<br>
+                                    <a href="https://console.firebase.google.com/u/0/project/trend-betmines/authentication/settings" target="_blank" class="text-blue-600 hover:underline">Impostazioni di Autenticazione Firebase</a>
+                                </li>
+                                <li>
+                                    Clicca su "Aggiungi dominio" e incolla questo indirizzo esatto:
+                                    <div class="flex items-center mt-1">
+                                        <input type="text" readonly id="domain-to-copy" value="${blockedUrl}" class="w-full bg-gray-100 p-2 rounded-l border">
+                                        <button id="copy-domain-btn" class="bg-gray-200 hover:bg-gray-300 p-2 rounded-r border">Copia</button>
+                                    </div>
+                                </li>
+                                <li>
+                                    Clicca "Aggiungi" e poi "Salva".
+                                </li>
+                            </ol>
+                            <p class="mt-4">Infine, ricarica questa pagina. Potrebbe volerci un minuto perché le modifiche si attivino.</p>
+                        `;
+
+                    } else if (error.code === 'auth/admin-restricted-operation') {
+                        friendlyMessage = `
+                            Si è verificato un nuovo errore di autenticazione: <strong>${error.code}</strong>.
+                            <br><br>
+                            Questo errore può accadere in progetti Firebase non recentissimi. Per risolverlo, prova a seguire questi passaggi:
+                            <br><br>
+                            <ol class="list-decimal list-inside space-y-2">
+                                <li>Vai alla tua <strong>console Firebase</strong> &rarr; <strong>Authentication</strong> &rarr; <strong>Sign-in method</strong>.</li>
+                                <li>In cima alla pagina, cerca un banner o un pulsante che ti invita ad <strong>"Eseguire l'upgrade a Identity Platform"</strong>.</li>
+                                <li>Se lo trovi, cliccaci sopra ed esegui l'upgrade (è gratuito per le funzionalità che usiamo). Una volta completato, ricarica questa pagina.</li>
+                            </ol>
+                        `;
+                    } else {
+                        friendlyMessage = `
+                            Si è verificato un errore di autenticazione con Firebase. Questo di solito accade perché l'autenticazione anonima non è abilitata.
+                            <br><br>
+                            <ol class="list-decimal list-inside space-y-2">
+                                <li><strong>Verifica che l'autenticazione anonima sia abilitata:</strong><br>Vai nella tua console Firebase &rarr; Authentication &rarr; Sign-in method e assicurati che il provider "Anonimo" sia <strong>abilitato</strong>.</li>
+                            </ol>
+                            <br>
+                            <p class="text-xs text-gray-500 mt-4">Dettagli errore: ${error.message}</p>
+                        `;
+                    }
+                    showModal('Errore di Configurazione Sicurezza', friendlyMessage, 'error');
+                     // Aggiungi event listener per il pulsante copia
+                    setTimeout(() => {
+                        const copyBtn = document.getElementById('copy-domain-btn');
+                        if (copyBtn) {
+                            copyBtn.addEventListener('click', () => {
+                                const domainInput = document.getElementById('domain-to-copy');
+                                domainInput.select();
+                                document.execCommand('copy');
+                                copyBtn.textContent = 'Copiato!';
+                                setTimeout(() => copyBtn.textContent = 'Copia', 2000);
+                            });
+                        }
+                    }, 0);
+                });
+            }
+        });
+
+        // --- Logica Principale ---
+        
+        // 1. Ascolta i dati da Firestore e renderizza la tabella
+        function listenToTips() {
+            if (!userId) return;
+            const q = query(collection(db, TIPS_COLLECTION), where("userId", "==", userId));
+            
+            onSnapshot(q, (querySnapshot) => {
+                const tips = [];
+                querySnapshot.forEach((doc) => {
+                    tips.push({ id: doc.id, ...doc.data() });
+                });
+                tips.sort((a, b) => {
+                    const dateA = a.matchDate?.seconds || 0;
+                    const dateB = b.matchDate?.seconds || 0;
+                    return dateB - dateA;
+                });
+                renderTable(tips);
+            }, (error) => {
+                console.error("Errore nell'ascolto dei dati:", error);
+                showModal('Errore Database', `Impossibile caricare i dati da Firestore: ${error.message}`, 'error');
+            });
+        }
+        
+        // 2. Renderizza la tabella
+        function renderTable(tips) {
+            tipsTableBody.innerHTML = '';
+            if (tips.length === 0) {
+                tipsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-gray-500">Nessun dato. Importa un file per iniziare.</td></tr>';
+                return;
+            }
+
+            tips.forEach(tip => {
+                let esitoClass = 'pending';
+                let esitoText = 'Attesa';
+                if (tip.status === 'fetching') {
+                    esitoClass = 'fetching';
+                    esitoText = 'Cerca...';
+                } else if (tip.outcome === 'V') {
+                    esitoClass = 'win';
+                    esitoText = 'Vinto';
+                } else if (tip.outcome === 'P') {
+                    esitoClass = 'lose';
+                    esitoText = 'Perso';
+                } else if (tip.status === 'completed' && !tip.outcome) {
+                     esitoClass = 'pending';
+                     esitoText = 'N/D';
+                }
+
+                const row = `
+                    <tr class="hover:bg-gray-50 transition-colors duration-150">
+                        <td class="table-cell">
+                            <div class="font-medium text-gray-900">${tip.homeTeam || ''}</div>
+                            <div class="text-sm text-gray-500">${tip.awayTeam || ''}</div>
+                        </td>
+                        <td class="table-cell text-sm text-gray-600">${tip.matchDate && tip.matchDate.seconds ? new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT') : 'Data non valida'}</td>
+                        <td class="table-cell text-sm text-gray-600">${tip.market ? String(tip.market).replace('🎯 Mercato: ', '') : ''}</td>
+                        <td class="table-cell text-center font-mono text-gray-700">
+                            <div>FT: ${tip.resultFT || '-'}</div>
+                            <div class="text-xs">HT: ${tip.resultHT || '-'}</div>
+                        </td>
+                        <td class="table-cell text-center">
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${esitoClass}">
+                                ${esitoText}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tipsTableBody.innerHTML += row;
+            });
+        }
+
+        // 3. Gestione importazione XLSX/CSV
+        importBtn.addEventListener('click', async () => {
+            const file = fileUploader.files[0];
+            if (!file) {
+                showModal('Attenzione', "Per favore, seleziona un file.");
+                return;
+            }
+
+            showLoader('Importazione dati in corso...');
+            importBtn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const data = event.target.result;
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                let importedCount = 0;
+                // Partiamo da 1 per saltare l'intestazione
+                for (let i = 1; i < rows.length; i++) {
+                    const columns = rows[i];
+                    if (columns.length < 8) continue;
+
+                    try {
+                        const homeTeam = (columns[4] || '').replace('🆚', '').trim();
+                        const awayTeam = (columns[5] || '').trim();
+                        const matchDateStr = columns[6];
+                        const market = columns[7];
+
+                        if (!homeTeam || !awayTeam || !matchDateStr || !market) continue;
+                        
+                        const matchDate = estraiDataOra(matchDateStr);
+                        if (!matchDate) continue;
+
+                        const newTip = {
+                            userId,
+                            homeTeam,
+                            awayTeam,
+                            matchDate,
+                            market,
+                            status: 'pending',
+                            resultFT: null,
+                            resultHT: null,
+                            outcome: null,
+                            sourceMessage: columns[14] || '',
+                            createdAt: serverTimestamp()
+                        };
+                        
+                        await addDoc(collection(db, TIPS_COLLECTION), newTip);
+                        importedCount++;
+
+                    } catch (e) {
+                        console.error("Errore nell'elaborazione della riga:", columns, e);
+                    }
+                }
+                hideLoader();
+                showModal('Operazione Completata', `Importazione completata! ${importedCount} pronostici sono stati aggiunti.`);
+                importBtn.disabled = false;
+                fileUploader.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 4. Gestione aggiornamento risultati
+        fetchResultsBtn.addEventListener('click', async () => {
+            if (!userId) return;
+
+            showLoader('Ricerca risultati in corso...');
+            fetchResultsBtn.disabled = true;
+
+            const now = new Date();
+            const q = query(collection(db, TIPS_COLLECTION), 
+                where("userId", "==", userId), 
+                where("status", "==", "pending"),
+                where("matchDate", "<", now)
+            );
+
+            const querySnapshot = await getDocs(q);
+            const pendingTips = [];
+            querySnapshot.forEach(doc => pendingTips.push({ id: doc.id, ...doc.data() }));
+
+            if (pendingTips.length === 0) {
+                showModal("Nessun Aggiornamento", "Non ci sono partite passate in attesa di risultato.");
+                hideLoader();
+                fetchResultsBtn.disabled = false;
+                return;
+            }
+            
+            let updatedCount = 0;
+            for (const tip of pendingTips) {
+                await updateDoc(doc(db, TIPS_COLLECTION, tip.id), { status: 'fetching' });
+
+                const dateString = new Date(tip.matchDate.seconds * 1000).toLocaleDateString('it-IT');
+                const userQuery = `Qual è stato il risultato finale (FT) e del primo tempo (HT) della partita di calcio tra ${tip.homeTeam} e ${tip.awayTeam} giocata il ${dateString}?`;
+                
+                try {
+                    const result = await callGeminiAPI(userQuery);
+                    
+                    const { ft_score, ht_score } = result;
+
+                    if (ft_score) {
+                        const outcome = calcolaEsito(ht_score, ft_score, tip.market);
+                        await updateDoc(doc(db, TIPS_COLLECTION, tip.id), {
+                            resultFT: ft_score,
+                            resultHT: ht_score,
+                            outcome: outcome,
+                            status: 'completed'
+                        });
+                        updatedCount++;
+                    } else {
+                         await updateDoc(doc(db, TIPS_COLLECTION, tip.id), { status: 'completed' });
+                    }
+                } catch (error) {
+                    console.error("Errore API per la partita:", tip.homeTeam, error);
+                    await updateDoc(doc(db, TIPS_COLLECTION, tip.id), { status: 'pending' });
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            hideLoader();
+            showModal('Operazione Completata', `Aggiornamento terminato! ${updatedCount} risultati sono stati trovati e aggiornati.`);
+            fetchResultsBtn.disabled = false;
+        });
+
+        async function callGeminiAPI(userQuery) {
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere le chiavi "ft_score" e "ht_score". Se trovi entrambi i risultati, valorizzali come stringhe (es. "2-1"). Se non trovi un risultato, il suo valore deve essere null. Esempio di risposta corretta: {"ft_score": "3-0", "ht_score": "1-0"}. Esempio se non trovi il risultato: {"ft_score": null, "ht_score": null}. Non aggiungere mai altro testo o spiegazioni.`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (!text) return { ft_score: null, ht_score: null };
+            
+            try {
+                const cleanText = text.replace(/```json\n?|\n?```/g, '');
+                return JSON.parse(cleanText);
+            } catch (e) {
+                 console.error("Errore nel parsing del JSON:", text);
+                 return { ft_score: null, ht_score: null };
+            }
+        }
+
+        // 5. Funzione per calcolare l'esito (traduzione da Python)
+        function calcolaEsito(risHT, risFT, mercato) {
+            if (!risFT || !mercato) return "";
+            try {
+                const [g1, g2] = risFT.split("-").map(Number);
+                const [ht1, ht2] = (risHT || "0-0").split("-").map(Number);
+
+                mercato = String(mercato).toLowerCase();
+
+                if (mercato.includes("1x2") && mercato.includes("finale")) {
+                    if (mercato.includes(" 1")) return g1 > g2 ? "V" : "P";
+                    if (mercato.includes(" x")) return g1 === g2 ? "V" : "P";
+                    if (mercato.includes(" 2")) return g1 < g2 ? "V" : "P";
+                }
+                else if (mercato.includes("doppia chance")) {
+                    if (mercato.includes("1x")) return g1 >= g2 ? "V" : "P";
+                    if (mercato.includes("x2")) return g1 <= g2 ? "V" : "P";
+                    if (mercato.includes("12")) return g1 !== g2 ? "V" : "P";
+                }
+                else if (mercato.includes("oltre") || mercato.includes("meno")) {
+                    const valueMatch = mercato.match(/(\d+\.\d+)/);
+                    if (!valueMatch) return "";
+                    const value = parseFloat(valueMatch[1]);
+                    if (mercato.includes("oltre")) return (g1 + g2) > value ? "V" : "P";
+                    if (mercato.includes("meno")) return (g1 + g2) < value ? "V" : "P";
+                }
+                else if (mercato.includes("gol/no gol")) {
+                    if (mercato.includes("si")) return g1 > 0 && g2 > 0 ? "V" : "P";
+                    if (mercato.includes("no")) return g1 === 0 || g2 === 0 ? "V" : "P";
+                }
+                else if (mercato.includes("pari/dispari")) {
+                    if (mercato.includes("pari")) return (g1 + g2) % 2 === 0 ? "V" : "P";
+                    if (mercato.includes("dispari")) return (g1 + g2) % 2 !== 0 ? "V" : "P";
+                }
+                else if (mercato.includes("primo tempo")) {
+                    if (mercato.includes("oltre 0.5")) return (ht1 + ht2) > 0.5 ? "V" : "P";
+                }
+
+            } catch (e) {
+                console.error("Errore in calcolaEsito:", e);
+                return "";
+            }
+            return "";
+        }
+    </script>
+</body>
+</html>
+
