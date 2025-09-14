@@ -158,11 +158,11 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-100">
                         <tr>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
                         </tr>
@@ -203,6 +203,11 @@
         let currentFilters = { startDate: null, endDate: null };
         const TIPS_COLLECTION = 'pronostici-sportivi';
         const MESE = { "gen":1,"feb":2,"mar":3,"apr":4,"mag":5,"giu":6,"lug":7,"ago":8,"set":9,"ott":10,"nov":11,"dic":12 };
+        const NAZIONI_MAP = {
+            "russia": "RUS", "mexico": "MEX", "netherlands": "NED", "spain": "SPA", "england": "ENG", 
+            "portugal": "POR", "turkey": "TUR", "colombia": "COL", "poland": "POL", "saudi arabia": "KSA",
+            "france": "FRA", "italy": "ITA", "germany": "GER", "brazil": "BRA", "argentina": "ARG"
+        };
 
         // --- Elementi del DOM ---
         const fileUploader = document.getElementById('file-uploader');
@@ -381,17 +386,14 @@
 
                 const row = `
                     <tr class="hover:bg-gray-50 transition-colors duration-150">
-                        <td class="table-cell">
-                            <div class="font-medium text-gray-900">${tip.homeTeam || ''}</div>
-                            <div class="text-sm text-gray-500">${tip.awayTeam || ''}</div>
-                        </td>
-                        <td class="table-cell text-sm text-gray-600">${tip.matchDate && tip.matchDate.seconds ? new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT') : 'Data non valida'}</td>
+                        <td class="table-cell text-sm text-gray-600">${tip.matchDate && tip.matchDate.seconds ? new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Data non valida'}</td>
                         <td class="table-cell text-sm text-gray-500">${tip.campionato || ''}</td>
-                        <td class="table-cell text-sm text-gray-600">${tip.market ? String(tip.market) : ''}</td>
+                        <td class="table-cell font-medium text-gray-900">${tip.homeTeam || ''} - ${tip.awayTeam || ''}</td>
                         <td class="table-cell text-center font-mono text-gray-700">
                             <div>FT: ${tip.resultFT || '-'}</div>
                             <div class="text-xs">HT: ${tip.resultHT || '-'}</div>
                         </td>
+                        <td class="table-cell text-sm text-gray-600">${tip.market ? String(tip.market) : ''}</td>
                         <td class="table-cell text-center">
                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${esitoClass}">
                                 ${esitoText}
@@ -448,7 +450,14 @@
                         const campionatoRegex = /🏆\s*(.+)/;
                         const match = messaggioCompleto.match(campionatoRegex);
                         if (match && match[1]) {
-                            campionato = match[1].split('\n')[0].trim();
+                           const parts = match[1].split(',').map(s => s.trim());
+                           if (parts.length > 1) {
+                               const nazione = parts.pop();
+                               const siglaNazione = NAZIONI_MAP[nazione.toLowerCase()] || nazione.substring(0,3).toUpperCase();
+                               campionato = `${siglaNazione} - ${parts.join(', ')}`;
+                           } else {
+                               campionato = parts[0];
+                           }
                         }
                         
                         if (!homeTeam || !awayTeam || !matchDateStr || !market) continue;
