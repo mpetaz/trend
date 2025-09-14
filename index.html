@@ -46,13 +46,44 @@
                 <button id="modal-close-btn-x" class="text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
             </div>
             <div id="modal-body" class="text-md text-gray-700 my-4"></div>
-            <div class="text-right mt-6">
-                 <button id="modal-close-btn" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm">
+            <div class="flex justify-end gap-4 mt-6">
+                 <button id="modal-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-all duration-200 shadow-sm hidden">
+                    Annulla
+                </button>
+                 <button id="modal-confirm-btn" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm">
                     OK
                 </button>
             </div>
         </div>
     </div>
+    
+    <!-- Modal Modifica Risultato -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-left max-w-md w-full m-4">
+            <div class="flex justify-between items-start">
+                <h3 class="text-xl font-bold text-gray-800">Modifica Risultato</h3>
+                <button id="edit-modal-close-btn-x" class="text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <p id="edit-modal-match-info" class="text-md text-gray-600 mt-2 mb-4"></p>
+            <form id="edit-form">
+                <input type="hidden" id="edit-doc-id">
+                <div class="mb-4">
+                    <label for="edit-ft-score" class="block text-sm font-medium text-gray-700">Risultato Finale (FT)</label>
+                    <input type="text" id="edit-ft-score" placeholder="Es. 2-1" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit-ht-score" class="block text-sm font-medium text-gray-700">Risultato Primo Tempo (HT)</label>
+                    <input type="text" id="edit-ht-score" placeholder="Es. 1-0" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm">
+                </div>
+            </form>
+            <div class="text-right mt-6">
+                 <button id="edit-modal-save-btn" class="bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm">
+                    Salva Modifiche
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
@@ -85,6 +116,41 @@
             </div>
              <p id="user-id-display" class="text-xs text-gray-400 mt-4 text-center"></p>
         </div>
+        
+        <!-- Filtri e Azioni -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Filtri e Azioni Avanzate</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Sezione Filtri -->
+                <div>
+                    <h3 class="text-lg font-medium mb-2">Filtra per Data</h3>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700">Da</label>
+                            <input type="date" id="start-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium text-gray-700">A</label>
+                            <input type="date" id="end-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+                    </div>
+                     <div class="mt-4 flex gap-2">
+                        <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtro</button>
+                        <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Filtro</button>
+                    </div>
+                </div>
+                <!-- Sezione Azioni Pericolose -->
+                <div>
+                    <h3 class="text-lg font-medium mb-2 text-red-700">Azioni di Cancellazione</h3>
+                     <div class="flex flex-col sm:flex-row gap-4">
+                        <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-sm">Cancella Dati Filtrati</button>
+                        <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm">Cancella Tutto</button>
+                    </div>
+                     <p class="text-xs text-gray-500 mt-2">Attenzione: queste azioni sono irreversibili.</p>
+                </div>
+            </div>
+        </div>
+
 
         <!-- Tabella Pronostici -->
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
@@ -94,14 +160,16 @@
                         <tr>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
                         </tr>
                     </thead>
                     <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
                         <!-- Le righe verranno inserite qui da JavaScript -->
-                        <tr><td colspan="5" class="text-center p-8 text-gray-500">Connessione a Firebase in corso...</td></tr>
+                        <tr><td colspan="7" class="text-center p-8 text-gray-500">Connessione a Firebase in corso...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -122,7 +190,7 @@
         // --- Import delle librerie Firebase ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Inizializzazione ---
         const app = initializeApp(firebaseConfig);
@@ -131,6 +199,8 @@
         
         // --- Variabili Globali ---
         let userId = null;
+        let allTips = [];
+        let currentFilters = { startDate: null, endDate: null };
         const TIPS_COLLECTION = 'pronostici-sportivi';
         const MESE = { "gen":1,"feb":2,"mar":3,"apr":4,"mag":5,"giu":6,"lug":7,"ago":8,"set":9,"ott":10,"nov":11,"dic":12 };
 
@@ -141,11 +211,33 @@
         const tipsTableBody = document.getElementById('tips-table-body');
         const loaderOverlay = document.getElementById('loader-overlay');
         const loaderText = document.getElementById('loader-text');
+        
+        // Modal Generico
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
         const modalBody = document.getElementById('modal-body');
-        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
         const modalCloseBtnX = document.getElementById('modal-close-btn-x');
+
+        // Modal di Modifica
+        const editModal = document.getElementById('edit-modal');
+        const editModalMatchInfo = document.getElementById('edit-modal-match-info');
+        const editModalCloseBtnX = document.getElementById('edit-modal-close-btn-x');
+        const editModalSaveBtn = document.getElementById('edit-modal-save-btn');
+        const editForm = document.getElementById('edit-form');
+        const editDocId = document.getElementById('edit-doc-id');
+        const editFtScore = document.getElementById('edit-ft-score');
+        const editHtScore = document.getElementById('edit-ht-score');
+
+        // Filtri e Azioni
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const filterBtn = document.getElementById('filter-btn');
+        const clearFilterBtn = document.getElementById('clear-filter-btn');
+        const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
+        const deleteAllBtn = document.getElementById('delete-all-btn');
+
 
         // --- Funzioni di Utility ---
         const showLoader = (text) => {
@@ -156,19 +248,23 @@
             loaderOverlay.classList.add('hidden');
         };
 
-        const showModal = (title, message, type = 'info') => {
+        const showModal = (title, message, type = 'info', onConfirm = null) => {
             modalTitle.textContent = title;
             modalBody.innerHTML = message;
             
+            modalConfirmBtn.onclick = onConfirm || hideModal;
+            modalConfirmBtn.textContent = onConfirm ? 'Conferma' : 'OK';
+            modalCancelBtn.style.display = onConfirm ? 'inline-block' : 'none';
+
             const titleBaseClasses = 'text-xl font-bold';
             const buttonBaseClasses = 'text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 shadow-sm';
             
             if (type === 'error') {
                 modalTitle.className = `${titleBaseClasses} text-red-700`;
-                modalCloseBtn.className = `${buttonBaseClasses} bg-red-600 hover:bg-red-700`;
+                modalConfirmBtn.className = `${buttonBaseClasses} bg-red-600 hover:bg-red-700`;
             } else {
                 modalTitle.className = `${titleBaseClasses} text-gray-800`;
-                modalCloseBtn.className = `${buttonBaseClasses} bg-violet-600 hover:bg-violet-700`;
+                modalConfirmBtn.className = `${buttonBaseClasses} bg-violet-600 hover:bg-violet-700`;
             }
             
             modal.classList.remove('hidden');
@@ -178,7 +274,8 @@
             modal.classList.add('hidden');
         }
 
-        modalCloseBtn.addEventListener('click', hideModal);
+        modalConfirmBtn.addEventListener('click', hideModal);
+        modalCancelBtn.addEventListener('click', hideModal);
         modalCloseBtnX.addEventListener('click', hideModal);
 
         function estraiDataOra(txt) {
@@ -214,115 +311,54 @@
             } else {
                 signInAnonymously(auth).catch(error => {
                     console.error("Errore di autenticazione anonima:", error);
-                    let friendlyMessage = `Si è verificato un errore di autenticazione con Firebase.<br><br><p class="text-xs text-gray-500 mt-4">Dettagli: ${error.message}</p>`;
-                    
-                    if (error.message && error.message.includes('auth/requests-from-referer')) {
-                        const refererMatch = error.message.match(/referer-(https?:\/\/.+?)-are-blocked/);
-                        let blockedDomain = 'il-tuo-dominio.com';
-                        let blockedUrlForApiKey = 'https://*.tuo-dominio.com/*';
-
-                        if (refererMatch && refererMatch[1]) {
-                            try {
-                                const fullUrl = new URL(refererMatch[1]);
-                                blockedDomain = fullUrl.hostname;
-                                const domainParts = blockedDomain.split('.');
-                                 if (domainParts.length > 2 && domainParts.includes('github')) {
-                                     blockedUrlForApiKey = `https://${domainParts.slice(-3).join('.')}`;
-                                 } else if (domainParts.length > 2) {
-                                    blockedUrlForApiKey = `https://*.${domainParts.slice(-2).join('.')}`;
-                                }
-                            } catch (e) {
-                                console.error("Non è stato possibile estrarre il dominio dall'errore:", error.message);
-                            }
-                        }
-                        
-                        friendlyMessage = `
-                            <p class="font-semibold text-lg mb-2">Configurazione Finale Sicurezza (2 Passaggi)</p>
-                            <p class="mb-4">Per sicurezza, sia Firebase che Google Cloud devono autorizzare l'indirizzo da cui stai usando l'app. È l'ultimo passo!</p>
-                            
-                            <div class="space-y-4">
-                                <!-- Step 1: Firebase -->
-                                <div>
-                                    <p class="font-semibold mb-2">1. Autorizza il dominio su Firebase (per il Login):</p>
-                                    <ol class="list-decimal list-inside text-sm space-y-1">
-                                        <li>Vai a: <a href="https://console.firebase.google.com/u/0/project/trend-betmines/authentication/settings" target="_blank" class="text-blue-600 hover:underline">Impostazioni Autenticazione Firebase</a></li>
-                                        <li>Clicca "Aggiungi dominio" e incolla questo:</li>
-                                        <li>
-                                            <div class="flex items-center mt-1">
-                                                <input type="text" readonly id="domain-to-copy-firebase" value="${blockedDomain}" class="w-full bg-gray-100 p-2 rounded-l border">
-                                                <button data-target="domain-to-copy-firebase" class="copy-btn bg-gray-200 hover:bg-gray-300 p-2 rounded-r border">Copia</button>
-                                            </div>
-                                        </li>
-                                        <li>Clicca "Aggiungi" e poi "Salva".</li>
-                                    </ol>
-                                </div>
-
-                                <!-- Step 2: Google Cloud -->
-                                <div>
-                                    <p class="font-semibold mb-2">2. Autorizza il sito sulla Chiave API (per Gemini):</p>
-                                    <ol class="list-decimal list-inside text-sm space-y-1">
-                                        <li>Vai a: <a href="https://console.cloud.google.com/apis/credentials?project=trend-betmines" target="_blank" class="text-blue-600 hover:underline">Impostazioni Chiave API Google</a> e clicca su "Browser key..."</li>
-                                        <li>Sotto "Limitazioni per i siti web", clicca "AGGIUNGI" e incolla questo (con l'asterisco *):</li>
-                                        <li>
-                                            <div class="flex items-center mt-1">
-                                                <input type="text" readonly id="domain-to-copy-gcp" value="${blockedUrlForApiKey}" class="w-full bg-gray-100 p-2 rounded-l border">
-                                                <button data-target="domain-to-copy-gcp" class="copy-btn bg-gray-200 hover:bg-gray-300 p-2 rounded-r border">Copia</button>
-                                            </div>
-                                        </li>
-                                        <li>Clicca "Fine" e poi "SALVA" in fondo.</li>
-                                    </ol>
-                                </div>
-                            </div>
-                            <p class="mt-4 text-sm">Infine, ricarica questa pagina. Potrebbe volerci un minuto perché le modifiche si attivino.</p>
-                        `;
-                    }
-                    
-                    showModal('Errore di Configurazione Sicurezza', friendlyMessage, 'error');
+                     showModal('Errore di Autenticazione', `Impossibile connettersi. Dettagli: ${error.message}`, 'error');
                 });
             }
         });
         
-        // Listener per i pulsanti COPIA nel modale
-        document.body.addEventListener('click', function(event) {
-            if (event.target.classList.contains('copy-btn')) {
-                const targetId = event.target.dataset.target;
-                const input = document.getElementById(targetId);
-                input.select();
-                document.execCommand('copy');
-                event.target.textContent = 'Copiato!';
-                setTimeout(() => event.target.textContent = 'Copia', 2000);
-            }
-        });
-
         // --- Logica Principale ---
         
-        // 1. Ascolta i dati da Firestore e renderizza la tabella
+        // 1. Ascolta i dati da Firestore
         function listenToTips() {
             if (!userId) return;
             const q = query(collection(db, TIPS_COLLECTION), where("userId", "==", userId));
             
             onSnapshot(q, (querySnapshot) => {
-                const tips = [];
+                allTips = [];
                 querySnapshot.forEach((doc) => {
-                    tips.push({ id: doc.id, ...doc.data() });
+                    allTips.push({ id: doc.id, ...doc.data() });
                 });
-                tips.sort((a, b) => {
-                    const dateA = a.matchDate?.seconds || 0;
-                    const dateB = b.matchDate?.seconds || 0;
-                    return dateB - dateA;
-                });
-                renderTable(tips);
+                applyFiltersAndRender();
             }, (error) => {
                 console.error("Errore nell'ascolto dei dati:", error);
-                showModal('Errore Database', `Impossibile caricare i dati da Firestore: ${error.message}`, 'error');
+                if (error.message.includes("requires an index")) {
+                     const link = `https://console.firebase.google.com/v1/r/project/trend-betmines/firestore/indexes?create_composite=Clpwcm9qZWN0cy90cmVuZC1iZXRtaW5lcy9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvcHJvbm9zdGljaS1zcG9ydGl2aS9pbmRleGVzL18QARoKCgZ1c2VySWQQARoOCgpob21lVGVhbRABGg0KCWF3YXlUZWFtEAESGg0KCW1hdGNoRGF0ZRABGgwKCF9fbmFtZV9fEAE`;
+                     showModal('Configurazione Richiesta', `Per evitare duplicati, Firebase ha bisogno di un nuovo indice. <a href="${link}" target="_blank" class="text-blue-600 hover:underline font-bold">Clicca qui</a>, attendi che la pagina carichi, e clicca su "Crea".`, 'error');
+                } else {
+                    showModal('Errore Database', `Impossibile caricare i dati da Firestore: ${error.message}`, 'error');
+                }
             });
         }
         
-        // 2. Renderizza la tabella
+        // 2. Applica i filtri e renderizza la tabella
+        function applyFiltersAndRender() {
+            let filteredTips = [...allTips];
+            if (currentFilters.startDate) {
+                filteredTips = filteredTips.filter(tip => (tip.matchDate.seconds * 1000) >= currentFilters.startDate.getTime());
+            }
+            if (currentFilters.endDate) {
+                filteredTips = filteredTips.filter(tip => (tip.matchDate.seconds * 1000) <= currentFilters.endDate.getTime());
+            }
+            
+            filteredTips.sort((a, b) => (b.matchDate?.seconds || 0) - (a.matchDate?.seconds || 0));
+            renderTable(filteredTips);
+        }
+
+        // 3. Renderizza la tabella
         function renderTable(tips) {
             tipsTableBody.innerHTML = '';
             if (tips.length === 0) {
-                tipsTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-gray-500">Nessun dato. Importa un file per iniziare.</td></tr>';
+                tipsTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-500">Nessun dato corrisponde ai filtri selezionati.</td></tr>';
                 return;
             }
 
@@ -350,7 +386,8 @@
                             <div class="text-sm text-gray-500">${tip.awayTeam || ''}</div>
                         </td>
                         <td class="table-cell text-sm text-gray-600">${tip.matchDate && tip.matchDate.seconds ? new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT') : 'Data non valida'}</td>
-                        <td class="table-cell text-sm text-gray-600">${tip.market ? String(tip.market).replace('🎯 Mercato: ', '') : ''}</td>
+                        <td class="table-cell text-sm text-gray-500">${tip.campionato || ''}</td>
+                        <td class="table-cell text-sm text-gray-600">${tip.market ? String(tip.market) : ''}</td>
                         <td class="table-cell text-center font-mono text-gray-700">
                             <div>FT: ${tip.resultFT || '-'}</div>
                             <div class="text-xs">HT: ${tip.resultHT || '-'}</div>
@@ -360,13 +397,21 @@
                                 ${esitoText}
                             </span>
                         </td>
+                        <td class="table-cell text-center">
+                            <button class="edit-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${tip.id}" data-hometeam="${tip.homeTeam}" data-awayteam="${tip.awayTeam}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </td>
                     </tr>
                 `;
                 tipsTableBody.innerHTML += row;
             });
         }
 
-        // 3. Gestione importazione XLSX/CSV
+        // 4. Gestione importazione XLSX/CSV (con controllo duplicati)
         importBtn.addEventListener('click', async () => {
             const file = fileUploader.files[0];
             if (!file) {
@@ -386,7 +431,8 @@
                 const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 let importedCount = 0;
-                // Partiamo da 1 per saltare l'intestazione
+                let skippedCount = 0;
+
                 for (let i = 1; i < rows.length; i++) {
                     const columns = rows[i];
                     if (columns.length < 8) continue;
@@ -395,24 +441,49 @@
                         const homeTeam = (columns[4] || '').replace('🆚', '').trim();
                         const awayTeam = (columns[5] || '').trim();
                         const matchDateStr = columns[6];
-                        const market = columns[7];
+                        let market = columns[7];
+                        const messaggioCompleto = columns[14] || '';
 
+                        let campionato = '';
+                        const campionatoRegex = /🏆\s*(.+)/;
+                        const match = messaggioCompleto.match(campionatoRegex);
+                        if (match && match[1]) {
+                            campionato = match[1].split('\n')[0].trim();
+                        }
+                        
                         if (!homeTeam || !awayTeam || !matchDateStr || !market) continue;
                         
+                        market = String(market).replace('🎯', '').replace('Mercato:', '').trim();
+
                         const matchDate = estraiDataOra(matchDateStr);
                         if (!matchDate) continue;
+
+                        // --- CONTROLLO DUPLICATI ---
+                        const q = query(collection(db, TIPS_COLLECTION), 
+                            where("userId", "==", userId),
+                            where("homeTeam", "==", homeTeam),
+                            where("awayTeam", "==", awayTeam),
+                            where("matchDate", "==", matchDate)
+                        );
+                        const existingDoc = await getDocs(q);
+                        if (!existingDoc.empty) {
+                            skippedCount++;
+                            continue; 
+                        }
+                        // --- FINE CONTROLLO ---
 
                         const newTip = {
                             userId,
                             homeTeam,
                             awayTeam,
                             matchDate,
+                            campionato,
                             market,
                             status: 'pending',
                             resultFT: null,
                             resultHT: null,
                             outcome: null,
-                            sourceMessage: columns[14] || '',
+                            sourceMessage: messaggioCompleto,
                             createdAt: serverTimestamp()
                         };
                         
@@ -424,14 +495,14 @@
                     }
                 }
                 hideLoader();
-                showModal('Operazione Completata', `Importazione completata! ${importedCount} pronostici sono stati aggiunti.`);
+                showModal('Operazione Completata', `Importazione completata! ${importedCount} nuovi pronostici aggiunti. ${skippedCount} duplicati sono stati ignorati.`);
                 importBtn.disabled = false;
                 fileUploader.value = '';
             };
             reader.readAsArrayBuffer(file);
         });
 
-        // 4. Gestione aggiornamento risultati
+        // 5. Gestione aggiornamento risultati
         fetchResultsBtn.addEventListener('click', async () => {
             if (!userId) return;
 
@@ -528,42 +599,50 @@
             }
         }
 
-        // 5. Funzione per calcolare l'esito (traduzione da Python)
+        // 6. Funzione per calcolare l'esito (con logica migliorata)
         function calcolaEsito(risHT, risFT, mercato) {
             if (!risFT || !mercato) return "";
             try {
                 const [g1, g2] = risFT.split("-").map(Number);
                 const [ht1, ht2] = (risHT || "0-0").split("-").map(Number);
 
-                mercato = String(mercato).toLowerCase();
+                let cleanMarket = String(mercato).toLowerCase().trim();
 
-                if (mercato.includes("1x2") && mercato.includes("finale")) {
-                    if (mercato.includes(" 1")) return g1 > g2 ? "V" : "P";
-                    if (mercato.includes(" x")) return g1 === g2 ? "V" : "P";
-                    if (mercato.includes(" 2")) return g1 < g2 ? "V" : "P";
+                const isVittoriaCasa = cleanMarket === '1' || cleanMarket.includes('vittoria in casa');
+                const isVittoriaTrasferta = cleanMarket === '2' || cleanMarket.includes('vittoria in trasferta');
+                const isPareggio = cleanMarket === 'x';
+
+                if (isVittoriaCasa) return g1 > g2 ? "V" : "P";
+                if (isVittoriaTrasferta) return g1 < g2 ? "V" : "P";
+                if (isPareggio) return g1 === g2 ? "V" : "P";
+
+                if (cleanMarket.includes("1x2") && cleanMarket.includes("finale")) {
+                    if (cleanMarket.includes(" 1")) return g1 > g2 ? "V" : "P";
+                    if (cleanMarket.includes(" x")) return g1 === g2 ? "V" : "P";
+                    if (cleanMarket.includes(" 2")) return g1 < g2 ? "V" : "P";
                 }
-                else if (mercato.includes("doppia chance")) {
-                    if (mercato.includes("1x")) return g1 >= g2 ? "V" : "P";
-                    if (mercato.includes("x2")) return g1 <= g2 ? "V" : "P";
-                    if (mercato.includes("12")) return g1 !== g2 ? "V" : "P";
+                else if (cleanMarket.includes("doppia chance")) {
+                    if (cleanMarket.includes("1x")) return g1 >= g2 ? "V" : "P";
+                    if (cleanMarket.includes("x2")) return g1 <= g2 ? "V" : "P";
+                    if (cleanMarket.includes("12")) return g1 !== g2 ? "V" : "P";
                 }
-                else if (mercato.includes("oltre") || mercato.includes("meno")) {
-                    const valueMatch = mercato.match(/(\d+\.\d+)/);
+                else if (cleanMarket.includes("oltre") || cleanMarket.includes("meno")) {
+                    const valueMatch = cleanMarket.match(/(\d+\.\d+)/);
                     if (!valueMatch) return "";
                     const value = parseFloat(valueMatch[1]);
-                    if (mercato.includes("oltre")) return (g1 + g2) > value ? "V" : "P";
-                    if (mercato.includes("meno")) return (g1 + g2) < value ? "V" : "P";
+                    if (cleanMarket.includes("oltre")) return (g1 + g2) > value ? "V" : "P";
+                    if (cleanMarket.includes("meno")) return (g1 + g2) < value ? "V" : "P";
                 }
-                else if (mercato.includes("gol/no gol")) {
-                    if (mercato.includes("si")) return g1 > 0 && g2 > 0 ? "V" : "P";
-                    if (mercato.includes("no")) return g1 === 0 || g2 === 0 ? "V" : "P";
+                else if (cleanMarket.includes("gol/no gol") || cleanMarket.includes("entrambe le squadre segnano")) {
+                    if (cleanMarket.includes("si") || cleanMarket.includes("gol")) return g1 > 0 && g2 > 0 ? "V" : "P";
+                    if (cleanMarket.includes("no")) return g1 === 0 || g2 === 0 ? "V" : "P";
                 }
-                else if (mercato.includes("pari/dispari")) {
-                    if (mercato.includes("pari")) return (g1 + g2) % 2 === 0 ? "V" : "P";
-                    if (mercato.includes("dispari")) return (g1 + g2) % 2 !== 0 ? "V" : "P";
+                else if (cleanMarket.includes("pari/dispari")) {
+                    if (cleanMarket.includes("pari")) return (g1 + g2) % 2 === 0 ? "V" : "P";
+                    if (cleanMarket.includes("dispari")) return (g1 + g2) % 2 !== 0 ? "V" : "P";
                 }
-                else if (mercato.includes("primo tempo")) {
-                    if (mercato.includes("oltre 0.5")) return (ht1 + ht2) > 0.5 ? "V" : "P";
+                else if (cleanMarket.includes("primo tempo")) {
+                    if (cleanMarket.includes("oltre 0.5")) return (ht1 + ht2) > 0.5 ? "V" : "P";
                 }
 
             } catch (e) {
@@ -572,6 +651,131 @@
             }
             return "";
         }
+        
+        // 7. Logica per il modal di modifica
+        tipsTableBody.addEventListener('click', (event) => {
+            const editButton = event.target.closest('.edit-btn');
+            if (editButton) {
+                const docId = editButton.dataset.id;
+                const homeTeam = editButton.dataset.hometeam;
+                const awayTeam = editButton.dataset.awayteam;
+                
+                editDocId.value = docId;
+                editModalMatchInfo.textContent = `${homeTeam} vs ${awayTeam}`;
+                editForm.reset();
+                editModal.classList.remove('hidden');
+            }
+        });
+
+        editModalCloseBtnX.addEventListener('click', () => {
+            editModal.classList.add('hidden');
+        });
+
+        editModalSaveBtn.addEventListener('click', async () => {
+            const docId = editDocId.value;
+            const ftScore = editFtScore.value.trim();
+            const htScore = editHtScore.value.trim();
+
+            if (!docId || !ftScore) {
+                showModal('Errore', 'Il risultato finale (FT) è obbligatorio.', 'error');
+                return;
+            }
+            if (!/^\d+-\d+$/.test(ftScore) || (htScore && !/^\d+-\d+$/.test(htScore))) {
+                 showModal('Errore', 'Formato risultato non valido. Usa il formato "X-Y" (es. 2-1).', 'error');
+                return;
+            }
+            
+            showLoader("Salvataggio in corso...");
+            
+            const tipRef = doc(db, TIPS_COLLECTION, docId);
+            const tipDoc = await getDoc(tipRef);
+            const tipData = tipDoc.data();
+
+            const outcome = calcolaEsito(htScore, ftScore, tipData.market);
+            
+            await updateDoc(tipRef, {
+                resultFT: ftScore,
+                resultHT: htScore || null,
+                outcome: outcome,
+                status: 'completed'
+            });
+            
+            hideLoader();
+            editModal.classList.add('hidden');
+        });
+
+        // 8. Logica Filtri e Cancellazioni
+        filterBtn.addEventListener('click', () => {
+            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            if (startDate) startDate.setHours(0, 0, 0, 0); 
+            
+            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+            if (endDate) endDate.setHours(23, 59, 59, 999);
+
+            currentFilters = { startDate, endDate };
+            applyFiltersAndRender();
+        });
+
+        clearFilterBtn.addEventListener('click', () => {
+            startDateInput.value = '';
+            endDateInput.value = '';
+            currentFilters = { startDate: null, endDate: null };
+            applyFiltersAndRender();
+        });
+        
+        deleteAllBtn.addEventListener('click', () => {
+            showModal(
+                'Conferma Cancellazione Totale', 
+                'Sei assolutamente sicuro di voler cancellare TUTTI i pronostici dal database? L\'azione è irreversibile.', 
+                'error',
+                async () => {
+                    showLoader('Cancellazione di tutti i dati in corso...');
+                    const q = query(collection(db, TIPS_COLLECTION), where("userId", "==", userId));
+                    const snapshot = await getDocs(q);
+                    const deletePromises = [];
+                    snapshot.forEach(doc => {
+                        deletePromises.push(deleteDoc(doc.ref));
+                    });
+                    await Promise.all(deletePromises);
+                    hideLoader();
+                    showModal('Operazione Completata', 'Tutti i dati sono stati cancellati con successo.');
+                }
+            );
+        });
+        
+        deleteFilteredBtn.addEventListener('click', () => {
+            const { startDate, endDate } = currentFilters;
+            if (!startDate || !endDate) {
+                showModal('Azione non possibile', 'Per favore, imposta un intervallo di date valido usando i filtri prima di cancellare.', 'error');
+                return;
+            }
+            
+            const startDateStr = startDate.toLocaleDateString('it-IT');
+            const endDateStr = endDate.toLocaleDateString('it-IT');
+
+            showModal(
+                'Conferma Cancellazione Periodo', 
+                `Sei sicuro di voler cancellare tutti i pronostici dal ${startDateStr} al ${endDateStr}? L'azione è irreversibile.`, 
+                'error',
+                async () => {
+                    showLoader('Cancellazione dei dati filtrati in corso...');
+                    let q = query(collection(db, TIPS_COLLECTION), 
+                        where("userId", "==", userId),
+                        where("matchDate", ">=", startDate),
+                        where("matchDate", "<=", endDate)
+                    );
+                    const snapshot = await getDocs(q);
+                    const deletePromises = [];
+                    snapshot.forEach(doc => {
+                        deletePromises.push(deleteDoc(doc.ref));
+                    });
+                    await Promise.all(deletePromises);
+                    hideLoader();
+                    showModal('Operazione Completata', `Tutti i dati dal ${startDateStr} al ${endDateStr} sono stati cancellati.`);
+                }
+            );
+        });
+
     </script>
 </body>
 </html>
