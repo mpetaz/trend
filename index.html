@@ -215,7 +215,7 @@
         // --- Import delle librerie Firebase ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy, deleteDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Inizializzazione ---
         const app = initializeApp(firebaseConfig);
@@ -826,11 +826,20 @@
                     showLoader('Cancellazione di tutti i dati in corso...');
                     const q = query(collection(db, TIPS_COLLECTION), where("userId", "==", userId));
                     const snapshot = await getDocs(q);
-                    const deletePromises = [];
-                    snapshot.forEach(doc => {
-                        deletePromises.push(deleteDoc(doc.ref));
-                    });
-                    await Promise.all(deletePromises);
+                    const docsToDelete = snapshot.docs;
+                    const batchSize = 499; // Max 500, usiamo un po' meno per sicurezza
+                    const numBatches = Math.ceil(docsToDelete.length / batchSize);
+
+                    for (let i = 0; i < numBatches; i++) {
+                        showLoader(`Cancellazione di tutti i dati in corso... (blocco ${i + 1} di ${numBatches})`);
+                        const batch = writeBatch(db);
+                        const chunk = docsToDelete.slice(i * batchSize, (i + 1) * batchSize);
+                        chunk.forEach(docRef => {
+                            batch.delete(docRef.ref);
+                        });
+                        await batch.commit();
+                    }
+                    
                     hideLoader();
                     showModal('Operazione Completata', 'Tutti i dati sono stati cancellati con successo.');
                 }
@@ -864,8 +873,20 @@
                 'error',
                 async () => {
                     showLoader(`Cancellazione di ${filteredTips.length} dati in corso...`);
-                    const deletePromises = filteredTips.map(tip => deleteDoc(doc(db, TIPS_COLLECTION, tip.id)));
-                    await Promise.all(deletePromises);
+                    const batchSize = 499;
+                    const numBatches = Math.ceil(filteredTips.length / batchSize);
+
+                    for (let i = 0; i < numBatches; i++) {
+                        showLoader(`Cancellazione dei dati filtrati in corso... (blocco ${i + 1} di ${numBatches})`);
+                        const batch = writeBatch(db);
+                        const chunk = filteredTips.slice(i * batchSize, (i + 1) * batchSize);
+                        chunk.forEach(tip => {
+                            const docRef = doc(db, TIPS_COLLECTION, tip.id);
+                            batch.delete(docRef);
+                        });
+                        await batch.commit();
+                    }
+
                     hideLoader();
                     showModal('Operazione Completata', `${filteredTips.length} dati sono stati cancellati.`);
                 }
