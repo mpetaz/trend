@@ -219,16 +219,17 @@
                     if (error.message && error.message.includes('auth/requests-from-referer')) {
                         const refererMatch = error.message.match(/referer-(https?:\/\/.+?)-are-blocked/);
                         let blockedDomain = 'il-tuo-dominio.com';
-                        let blockedUrlForApiKey = 'https://*.tuo-dominio.com';
+                        let blockedUrlForApiKey = 'https://*.tuo-dominio.com/*';
 
                         if (refererMatch && refererMatch[1]) {
                             try {
                                 const fullUrl = new URL(refererMatch[1]);
                                 blockedDomain = fullUrl.hostname;
                                 const domainParts = blockedDomain.split('.');
-                                if (domainParts.length > 2) {
-                                    // Costruisce una wildcard per Google Cloud API (es. https://*.scf.usercontent.goog)
-                                    blockedUrlForApiKey = `https://*.${domainParts.slice(-3).join('.')}`;
+                                 if (domainParts.length > 2 && domainParts.includes('github')) {
+                                     blockedUrlForApiKey = `https://${domainParts.slice(-3).join('.')}`;
+                                 } else if (domainParts.length > 2) {
+                                    blockedUrlForApiKey = `https://*.${domainParts.slice(-2).join('.')}`;
                                 }
                             } catch (e) {
                                 console.error("Non è stato possibile estrarre il dominio dall'errore:", error.message);
@@ -492,7 +493,7 @@
         });
 
         async function callGeminiAPI(userQuery) {
-            const apiKey = ""; 
+            const apiKey = "AIzaSyCTPCU1Cwg3U3qcGmrhg_Vr6NBL1kgZrrw";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere le chiavi "ft_score" e "ht_score". Se trovi entrambi i risultati, valorizzali come stringhe (es. "2-1"). Se non trovi un risultato, il suo valore deve essere null. Esempio di risposta corretta: {"ft_score": "3-0", "ht_score": "1-0"}. Esempio se non trovi il risultato: {"ft_score": null, "ht_score": null}. Non aggiungere mai altro testo o spiegazioni.`;
