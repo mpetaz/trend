@@ -15,6 +15,16 @@
         .pending { background-color: #fef9c3; color: #854d0e; }
         .fetching { background-color: #e0e7ff; color: #3730a3; }
         .table-cell { padding: 0.75rem; vertical-align: middle; }
+        .filter-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C3.732 4.943 9.522 3 10 3s6.268 1.943 9.542 7c-3.274 5.057-9.062 7-9.542 7S3.732 15.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>');
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.25em 1.25em;
+            padding-right: 2rem;
+        }
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
@@ -134,10 +144,6 @@
                             <input type="date" id="end-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
                         </div>
                     </div>
-                     <div class="mt-4 flex gap-2">
-                        <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtro</button>
-                        <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Filtro</button>
-                    </div>
                 </div>
                 <!-- Sezione Azioni Pericolose -->
                 <div>
@@ -149,6 +155,10 @@
                      <p class="text-xs text-gray-500 mt-2">Attenzione: queste azioni sono irreversibili.</p>
                 </div>
             </div>
+            <div class="mt-4 flex gap-2">
+                <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtri</button>
+                <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Tutti i Filtri</button>
+            </div>
         </div>
 
 
@@ -159,11 +169,26 @@
                     <thead class="bg-gray-100">
                         <tr>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                <div class="flex items-center">
+                                    Campionato
+                                    <select id="campionato-filter" class="ml-2 block w-full border-gray-300 rounded-md shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500"></select>
+                                </div>
+                            </th>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                <div class="flex items-center">
+                                    Mercato
+                                    <select id="mercato-filter" class="ml-2 block w-full border-gray-300 rounded-md shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500"></select>
+                                </div>
+                            </th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                <div class="flex items-center justify-center">
+                                    Esito
+                                    <select id="esito-filter" class="ml-2 block w-full border-gray-300 rounded-md shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500"></select>
+                                </div>
+                            </th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
                         </tr>
                     </thead>
@@ -200,7 +225,7 @@
         // --- Variabili Globali ---
         let userId = null;
         let allTips = [];
-        let currentFilters = { startDate: null, endDate: null };
+        let currentFilters = { startDate: null, endDate: null, campionato: '', mercato: '', esito: '' };
         const TIPS_COLLECTION = 'pronostici-sportivi';
         const MESE = { "gen":1,"feb":2,"mar":3,"apr":4,"mag":5,"giu":6,"lug":7,"ago":8,"set":9,"ott":10,"nov":11,"dic":12 };
         const NAZIONI_MAP = {
@@ -242,6 +267,11 @@
         const clearFilterBtn = document.getElementById('clear-filter-btn');
         const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
         const deleteAllBtn = document.getElementById('delete-all-btn');
+        
+        // Filtri Colonna
+        const campionatoFilter = document.getElementById('campionato-filter');
+        const mercatoFilter = document.getElementById('mercato-filter');
+        const esitoFilter = document.getElementById('esito-filter');
 
 
         // --- Funzioni di Utility ---
@@ -333,6 +363,7 @@
                 querySnapshot.forEach((doc) => {
                     allTips.push({ id: doc.id, ...doc.data() });
                 });
+                populateColumnFilters();
                 applyFiltersAndRender();
             }, (error) => {
                 console.error("Errore nell'ascolto dei dati:", error);
@@ -345,14 +376,33 @@
             });
         }
         
-        // 2. Applica i filtri e renderizza la tabella
+        // 2. Applica tutti i filtri e renderizza la tabella
         function applyFiltersAndRender() {
             let filteredTips = [...allTips];
+            
+            // Filtro per data
             if (currentFilters.startDate) {
                 filteredTips = filteredTips.filter(tip => (tip.matchDate.seconds * 1000) >= currentFilters.startDate.getTime());
             }
             if (currentFilters.endDate) {
                 filteredTips = filteredTips.filter(tip => (tip.matchDate.seconds * 1000) <= currentFilters.endDate.getTime());
+            }
+
+            // Filtri per colonna
+            if (currentFilters.campionato) {
+                filteredTips = filteredTips.filter(tip => tip.campionato === currentFilters.campionato);
+            }
+            if (currentFilters.mercato) {
+                filteredTips = filteredTips.filter(tip => tip.market === currentFilters.mercato);
+            }
+            if (currentFilters.esito) {
+                filteredTips = filteredTips.filter(tip => {
+                    if (currentFilters.esito === 'V') return tip.outcome === 'V';
+                    if (currentFilters.esito === 'P') return tip.outcome === 'P';
+                    if (currentFilters.esito === 'N/D') return tip.status === 'completed' && !tip.outcome;
+                    if (currentFilters.esito === 'Attesa') return tip.status === 'pending' || tip.status === 'fetching';
+                    return false;
+                });
             }
             
             filteredTips.sort((a, b) => (b.matchDate?.seconds || 0) - (a.matchDate?.seconds || 0));
@@ -412,8 +462,30 @@
                 tipsTableBody.innerHTML += row;
             });
         }
+        
+        // 4. Popola i filtri delle colonne
+        function populateColumnFilters() {
+            const campionati = [...new Set(allTips.map(tip => tip.campionato).filter(c => c))].sort();
+            const mercati = [...new Set(allTips.map(tip => tip.market).filter(m => m))].sort();
+            const esiti = ['Vinto', 'Perso', 'Attesa', 'N/D'];
 
-        // 4. Gestione importazione XLSX/CSV (con controllo duplicati)
+            const populate = (select, options, valueMap = null) => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Tutti</option>';
+                options.forEach(opt => {
+                    const optionValue = valueMap ? valueMap[opt] : opt;
+                    const selected = optionValue === currentValue ? 'selected' : '';
+                    select.innerHTML += `<option value="${optionValue}" ${selected}>${opt}</option>`;
+                });
+            };
+            
+            populate(campionatoFilter, campionati);
+            populate(mercatoFilter, mercati);
+            populate(esitoFilter, esiti, { 'Vinto': 'V', 'Perso': 'P', 'Attesa': 'Attesa', 'N/D': 'N/D' });
+        }
+
+
+        // 5. Gestione importazione XLSX/CSV (con controllo duplicati)
         importBtn.addEventListener('click', async () => {
             const file = fileUploader.files[0];
             if (!file) {
@@ -511,7 +583,7 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // 5. Gestione aggiornamento risultati
+        // 6. Gestione aggiornamento risultati
         fetchResultsBtn.addEventListener('click', async () => {
             if (!userId) return;
 
@@ -608,7 +680,7 @@
             }
         }
 
-        // 6. Funzione per calcolare l'esito (con logica migliorata)
+        // 7. Funzione per calcolare l'esito (con logica migliorata)
         function calcolaEsito(risHT, risFT, mercato) {
             if (!risFT || !mercato) return "";
             try {
@@ -618,7 +690,7 @@
                 let cleanMarket = String(mercato).toLowerCase().trim();
 
                 const isVittoriaCasa = cleanMarket === '1' || cleanMarket.includes('vittoria in casa');
-                const isVittoriaTrasferta = cleanMarket === '2' || cleanMarket.includes('vittoria in trasferta');
+                const isVittoriaTrasferta = cleanMarket === '2' || cleanMarket.includes('vittoria in trasferta') || cleanMarket.includes('vittoria trasferta');
                 const isPareggio = cleanMarket === 'x';
 
                 if (isVittoriaCasa) return g1 > g2 ? "V" : "P";
@@ -661,7 +733,7 @@
             return "";
         }
         
-        // 7. Logica per il modal di modifica
+        // 8. Logica per il modal di modifica
         tipsTableBody.addEventListener('click', (event) => {
             const editButton = event.target.closest('.edit-btn');
             if (editButton) {
@@ -713,23 +785,36 @@
             editModal.classList.add('hidden');
         });
 
-        // 8. Logica Filtri e Cancellazioni
-        filterBtn.addEventListener('click', () => {
-            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+        // 9. Logica Filtri
+        function applyAllFilters() {
+             const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
             if (startDate) startDate.setHours(0, 0, 0, 0); 
             
             const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
             if (endDate) endDate.setHours(23, 59, 59, 999);
-
-            currentFilters = { startDate, endDate };
+            
+            currentFilters = {
+                startDate,
+                endDate,
+                campionato: campionatoFilter.value,
+                mercato: mercatoFilter.value,
+                esito: esitoFilter.value
+            };
             applyFiltersAndRender();
-        });
+        }
+        
+        filterBtn.addEventListener('click', applyAllFilters);
+        campionatoFilter.addEventListener('change', applyAllFilters);
+        mercatoFilter.addEventListener('change', applyAllFilters);
+        esitoFilter.addEventListener('change', applyAllFilters);
 
         clearFilterBtn.addEventListener('click', () => {
             startDateInput.value = '';
             endDateInput.value = '';
-            currentFilters = { startDate: null, endDate: null };
-            applyFiltersAndRender();
+            campionatoFilter.value = '';
+            mercatoFilter.value = '';
+            esitoFilter.value = '';
+            applyAllFilters();
         });
         
         deleteAllBtn.addEventListener('click', () => {
@@ -753,34 +838,36 @@
         });
         
         deleteFilteredBtn.addEventListener('click', () => {
-            const { startDate, endDate } = currentFilters;
-            if (!startDate || !endDate) {
-                showModal('Azione non possibile', 'Per favore, imposta un intervallo di date valido usando i filtri prima di cancellare.', 'error');
+            const filteredTips = allTips.filter(tip => {
+                 let pass = true;
+                if (currentFilters.startDate && (tip.matchDate.seconds * 1000) < currentFilters.startDate.getTime()) pass = false;
+                if (currentFilters.endDate && (tip.matchDate.seconds * 1000) > currentFilters.endDate.getTime()) pass = false;
+                if (currentFilters.campionato && tip.campionato !== currentFilters.campionato) pass = false;
+                if (currentFilters.mercato && tip.market !== currentFilters.mercato) pass = false;
+                if (currentFilters.esito) {
+                    if (currentFilters.esito === 'V' && tip.outcome !== 'V') pass = false;
+                    if (currentFilters.esito === 'P' && tip.outcome !== 'P') pass = false;
+                    if (currentFilters.esito === 'N/D' && !(tip.status === 'completed' && !tip.outcome)) pass = false;
+                    if (currentFilters.esito === 'Attesa' && !(tip.status === 'pending' || tip.status === 'fetching')) pass = false;
+                }
+                return pass;
+            });
+
+            if (filteredTips.length === 0) {
+                 showModal('Azione non possibile', 'Nessun dato corrisponde ai filtri attuali. Impossibile cancellare.', 'error');
                 return;
             }
-            
-            const startDateStr = startDate.toLocaleDateString('it-IT');
-            const endDateStr = endDate.toLocaleDateString('it-IT');
 
             showModal(
-                'Conferma Cancellazione Periodo', 
-                `Sei sicuro di voler cancellare tutti i pronostici dal ${startDateStr} al ${endDateStr}? L'azione è irreversibile.`, 
+                'Conferma Cancellazione Filtrati', 
+                `Sei sicuro di voler cancellare i ${filteredTips.length} pronostici visualizzati? L'azione è irreversibile.`, 
                 'error',
                 async () => {
-                    showLoader('Cancellazione dei dati filtrati in corso...');
-                    let q = query(collection(db, TIPS_COLLECTION), 
-                        where("userId", "==", userId),
-                        where("matchDate", ">=", startDate),
-                        where("matchDate", "<=", endDate)
-                    );
-                    const snapshot = await getDocs(q);
-                    const deletePromises = [];
-                    snapshot.forEach(doc => {
-                        deletePromises.push(deleteDoc(doc.ref));
-                    });
+                    showLoader(`Cancellazione di ${filteredTips.length} dati in corso...`);
+                    const deletePromises = filteredTips.map(tip => deleteDoc(doc(db, TIPS_COLLECTION, tip.id)));
                     await Promise.all(deletePromises);
                     hideLoader();
-                    showModal('Operazione Completata', `Tutti i dati dal ${startDateStr} al ${endDateStr} sono stati cancellati.`);
+                    showModal('Operazione Completata', `${filteredTips.length} dati sono stati cancellati.`);
                 }
             );
         });
