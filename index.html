@@ -101,6 +101,30 @@
             <p class="text-lg text-gray-600 mt-2">Importa i tuoi pronostici e aggiorna i risultati con un click.</p>
         </header>
 
+        <!-- Statistiche Rapide -->
+        <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <!-- Box 1: Partite Totali -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
+                <dd id="total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
+            </div>
+            <!-- Box 2: Vinte -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Vinte</dt>
+                <dd id="partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
+            </div>
+            <!-- Box 3: Perse -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Perse</dt>
+                <dd id="partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
+            </div>
+            <!-- Box 4: % Vinte -->
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">% Vinte</dt>
+                <dd id="percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
+            </div>
+        </div>
+
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
             <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Pannello di Controllo</h2>
             <div class="flex flex-col md:flex-row gap-4 items-center">
@@ -272,6 +296,12 @@
         const campionatoFilter = document.getElementById('campionato-filter');
         const mercatoFilter = document.getElementById('mercato-filter');
         const esitoFilter = document.getElementById('esito-filter');
+        
+        // Stats Box
+        const totalPartiteEl = document.getElementById('total-partite');
+        const partiteVinteEl = document.getElementById('partite-vinte');
+        const partitePerseEl = document.getElementById('partite-perse');
+        const percentualeVinteEl = document.getElementById('percentuale-vinte');
 
 
         // --- Funzioni di Utility ---
@@ -376,7 +406,7 @@
             });
         }
         
-        // 2. Applica tutti i filtri e renderizza la tabella
+        // 2. Applica tutti i filtri e renderizza la tabella e le statistiche
         function applyFiltersAndRender() {
             let filteredTips = [...allTips];
             
@@ -407,6 +437,7 @@
             
             filteredTips.sort((a, b) => (b.matchDate?.seconds || 0) - (a.matchDate?.seconds || 0));
             renderTable(filteredTips);
+            updateStatsBox(filteredTips);
         }
 
         // 3. Renderizza la tabella
@@ -483,9 +514,32 @@
             populate(mercatoFilter, mercati);
             populate(esitoFilter, esiti, { 'Vinto': 'V', 'Perso': 'P', 'Attesa': 'Attesa', 'N/D': 'N/D' });
         }
+        
+        // 5. Aggiorna i box delle statistiche
+        function updateStatsBox(tips) {
+            const partiteConcluse = tips.filter(tip => tip.outcome === 'V' || tip.outcome === 'P');
+            const vinte = partiteConcluse.filter(tip => tip.outcome === 'V').length;
+            const perse = partiteConcluse.filter(tip => tip.outcome === 'P').length;
+            const totali = vinte + perse;
+            const percentuale = totali > 0 ? (vinte / totali) * 100 : 0;
+
+            totalPartiteEl.textContent = totali;
+            partiteVinteEl.textContent = vinte;
+            partitePerseEl.textContent = perse;
+            percentualeVinteEl.textContent = `${percentuale.toFixed(1)}%`;
+
+            percentualeVinteEl.classList.remove('text-green-600', 'text-red-600', 'text-gray-900');
+            if (percentuale >= 50) {
+                percentualeVinteEl.classList.add('text-green-600');
+            } else if (totali > 0) {
+                 percentualeVinteEl.classList.add('text-red-600');
+            } else {
+                percentualeVinteEl.classList.add('text-gray-900');
+            }
+        }
 
 
-        // 5. Gestione importazione XLSX/CSV (con controllo duplicati)
+        // 6. Gestione importazione XLSX/CSV (con controllo duplicati)
         importBtn.addEventListener('click', async () => {
             const file = fileUploader.files[0];
             if (!file) {
@@ -583,7 +637,7 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // 6. Gestione aggiornamento risultati
+        // 7. Gestione aggiornamento risultati
         fetchResultsBtn.addEventListener('click', async () => {
             if (!userId) return;
 
@@ -680,7 +734,7 @@
             }
         }
 
-        // 7. Funzione per calcolare l'esito (con logica migliorata)
+        // 8. Funzione per calcolare l'esito (con logica migliorata)
         function calcolaEsito(risHT, risFT, mercato) {
             if (!risFT || !mercato) return "";
             try {
@@ -733,7 +787,7 @@
             return "";
         }
         
-        // 8. Logica per il modal di modifica
+        // 9. Logica per il modal di modifica
         tipsTableBody.addEventListener('click', (event) => {
             const editButton = event.target.closest('.edit-btn');
             if (editButton) {
@@ -785,7 +839,7 @@
             editModal.classList.add('hidden');
         });
 
-        // 9. Logica Filtri
+        // 10. Logica Filtri
         function applyAllFilters() {
              const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
             if (startDate) startDate.setHours(0, 0, 0, 0); 
