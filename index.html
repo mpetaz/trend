@@ -228,7 +228,7 @@
     <script type="module">
         // --- CONFIGURAZIONE FIREBASE ---
         const firebaseConfig = {
-            apiKey: "AIzaSyBcJEMlNI2nFTp21CsycvQsHpTE7NRwblw",
+            apiKey: "AIzaSyB9UHe0WirATu8KhHdH7dNdmcbhnaKKy6I",
             authDomain: "trend-betmines.firebaseapp.com",
             projectId: "trend-betmines",
             storageBucket: "trend-betmines.firebasestorage.app",
@@ -690,7 +690,6 @@
                     console.error("Errore API per la partita:", tip.homeTeam, error);
                     await updateDoc(doc(db, TIPS_COLLECTION, tip.id), { status: 'pending' });
                 }
-                await new Promise(resolve => setTimeout(resolve, 1000));
             }
 
             hideLoader();
@@ -698,8 +697,8 @@
             fetchResultsBtn.disabled = false;
         });
 
-        async function callGeminiAPI(userQuery) {
-            const apiKey = "AIzaSyBcJEMlNI2nFTp21CsycvQsHpTE7NRwblw";
+        async function callGeminiAPI(userQuery, retries = 3) {
+            const apiKey = "AIzaSyB9UHe0WirATu8KhHdH7dNdmcbhnaKKy6I";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere le chiavi "ft_score" e "ht_score". Se trovi entrambi i risultati, valorizzali come stringhe (es. "2-1"). Se non trovi un risultato, il suo valore deve essere null. Esempio di risposta corretta: {"ft_score": "3-0", "ht_score": "1-0"}. Esempio se non trovi il risultato: {"ft_score": null, "ht_score": null}. Non aggiungere mai altro testo o spiegazioni.`;
@@ -709,29 +708,43 @@
                 tools: [{ "google_search": {} }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
             };
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
             
-            if (!text) return { ft_score: null, ht_score: null };
-            
-            try {
-                const cleanText = text.replace(/```json\n?|\n?```/g, '');
-                return JSON.parse(cleanText);
-            } catch (e) {
-                 console.error("Errore nel parsing del JSON:", text);
-                 return { ft_score: null, ht_score: null };
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 503 && i < retries - 1) {
+                        console.warn(`Tentativo ${i + 1} fallito (503). Riprovo tra ${ (i + 1) * 2 } secondi...`);
+                        await new Promise(resolve => setTimeout(resolve, (i + 1) * 2000));
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (!text) return { ft_score: null, ht_score: null };
+                    
+                    try {
+                        const cleanText = text.replace(/```json\n?|\n?```/g, '');
+                        return JSON.parse(cleanText);
+                    } catch (e) {
+                         console.error("Errore nel parsing del JSON:", text);
+                         return { ft_score: null, ht_score: null };
+                    }
+                } catch (error) {
+                    console.error(`Errore nel tentativo ${i + 1}:`, error);
+                    if (i === retries - 1) throw error;
+                }
             }
+             throw new Error("Tutti i tentativi di chiamata API sono falliti.");
         }
 
         // 8. Funzione per calcolare l'esito (con logica migliorata)
@@ -881,7 +894,7 @@
                     const q = query(collection(db, TIPS_COLLECTION), where("userId", "==", userId));
                     const snapshot = await getDocs(q);
                     const docsToDelete = snapshot.docs;
-                    const batchSize = 499; // Max 500, usiamo un po' meno per sicurezza
+                    const batchSize = 499;
                     const numBatches = Math.ceil(docsToDelete.length / batchSize);
 
                     for (let i = 0; i < numBatches; i++) {
