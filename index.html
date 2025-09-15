@@ -699,7 +699,7 @@
         });
 
         async function callGeminiAPI(userQuery) {
-            const apiKey = "AIzaSyCTPCU1Cwg3U3qcGmrhg_Vr6NBL1kgZrrw";
+            const apiKey = "AIzaSyBcJEMlNI2nFTp21CsycvQsHpTE7NRwblw";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere le chiavi "ft_score" e "ht_score". Se trovi entrambi i risultati, valorizzali come stringhe (es. "2-1"). Se non trovi un risultato, il suo valore deve essere null. Esempio di risposta corretta: {"ft_score": "3-0", "ht_score": "1-0"}. Esempio se non trovi il risultato: {"ft_score": null, "ht_score": null}. Non aggiungere mai altro testo o spiegazioni.`;
