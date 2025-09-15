@@ -361,7 +361,6 @@
             } else {
                 signInAnonymously(auth).catch(error => {
                     console.error("Errore di autenticazione anonima:", error);
-                    // Rimosso il popup complesso. Mostra un errore semplice.
                     showModal(
                         'Errore di Autenticazione', 
                         `Impossibile connettersi a Firebase. L'app funzionerà correttamente solo dal sito ufficiale: <a href="https://mpetaz.github.io/trend/" target="_blank" class="text-blue-600 hover:underline">https://mpetaz.github.io/trend/</a> <br><br><p class="text-xs text-gray-500 mt-4">Dettagli: ${error.message}</p>`, 
@@ -768,7 +767,7 @@
                     if (cleanMarket.includes("meno")) return (g1 + g2) < value ? "V" : "P";
                 }
                 else if (cleanMarket.includes("gol/no gol") || cleanMarket.includes("entrambe le squadre segnano")) {
-                    const isGoal = cleanMarket.includes("si") || cleanMarket.includes("gol");
+                    const isGoal = cleanMarket.includes("si") || cleanMarket.includes("sì") || cleanMarket.includes("gol");
                     const isNoGoal = cleanMarket.includes("no");
                     if(isGoal) return g1 > 0 && g2 > 0 ? "V" : "P";
                     if(isNoGoal) return g1 === 0 || g2 === 0 ? "V" : "P";
