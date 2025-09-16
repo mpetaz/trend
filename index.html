@@ -26,7 +26,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Stili per i filtri multi-selezione */
         .multiselect-container {
             position: relative;
         }
@@ -37,18 +36,27 @@
             border: 1px solid #ddd;
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-height: 200px;
+            max-height: 250px; /* Aumentato */
+            width: 20rem; /* Aumentato */
             overflow-y: auto;
             z-index: 10;
-            width: 100%;
         }
         .multiselect-dropdown label {
             display: block;
             padding: 0.5rem 1rem;
             cursor: pointer;
+            white-space: nowrap;
         }
         .multiselect-dropdown label:hover {
             background-color: #f3f4f6;
+        }
+        .tab-active {
+            border-color: #6d28d9;
+            color: #6d28d9;
+        }
+        .tab-inactive {
+            border-color: transparent;
+            color: #6b7280;
         }
     </style>
 </head>
@@ -111,115 +119,123 @@
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold text-gray-900">Trendo - Gestione Pronostici</h1>
-            <p class="text-lg text-gray-600 mt-2">Importa i tuoi pronostici e aggiorna i risultati con un click.</p>
+            <p class="text-lg text-gray-600 mt-2">La tua dashboard di analisi e gestione dei pronostici sportivi.</p>
         </header>
 
-        <!-- Statistiche Rapide -->
-        <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
-                <dd id="total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                <dt class="truncate text-sm font-medium text-gray-500">Vinte</dt>
-                <dd id="partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                <dt class="truncate text-sm font-medium text-gray-500">Perse</dt>
-                <dd id="partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                <dt class="truncate text-sm font-medium text-gray-500">% Vinte</dt>
-                <dd id="percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
-            </div>
+        <!-- Navigazione a Schede -->
+        <div class="mb-8 flex justify-center border-b border-gray-200">
+            <button id="show-dashboard-btn" class="px-6 py-3 text-lg font-medium border-b-2 tab-active">Dashboard & Analisi</button>
+            <button id="show-gestione-btn" class="px-6 py-3 text-lg font-medium border-b-2 tab-inactive">Gestione Database</button>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Pannello di Controllo</h2>
-            <div class="flex flex-col md:flex-row gap-4 items-center">
-                <div class="flex-1 w-full">
-                    <label for="file-uploader" class="block text-sm font-medium text-gray-700 mb-1">1. Carica il tuo file (.xlsx o .csv)</label>
-                    <input type="file" id="file-uploader" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
+        <!-- Contenuto delle Schede -->
+        <div>
+            <!-- Scheda Dashboard -->
+            <div id="dashboard-view">
+                <!-- Statistiche Rapide -->
+                <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                        <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
+                        <dd id="total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
+                    </div>
+                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                        <dt class="truncate text-sm font-medium text-gray-500">Vinte</dt>
+                        <dd id="partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
+                    </div>
+                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                        <dt class="truncate text-sm font-medium text-gray-500">Perse</dt>
+                        <dd id="partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
+                    </div>
+                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                        <dt class="truncate text-sm font-medium text-gray-500">% Vinte</dt>
+                        <dd id="percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
+                    </div>
                 </div>
-                <button id="import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm disabled:bg-gray-400" disabled>
-                    Importa Dati
-                </button>
 
-                <div class="border-t md:border-t-0 md:border-l border-gray-200 my-4 md:my-0 md:mx-4 h-auto md:h-12"></div>
-                
-                <div class="flex-1 w-full text-center md:text-left">
-                     <p class="text-sm font-medium text-gray-700 mb-1">2. Aggiorna Risultati</p>
-                    <p class="text-xs text-gray-500 mb-2">Cerca i risultati per le partite passate e non ancora definite.</p>
-                </div>
-                <button id="fetch-results-btn" class="w-full md:w-auto bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm disabled:bg-gray-400" disabled>
-                    ✨ Aggiorna Risultati
-                </button>
-            </div>
-             <p id="user-id-display" class="text-xs text-gray-400 mt-4 text-center"></p>
-        </div>
-        
-        <!-- Filtri e Azioni -->
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Filtri e Azioni</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Filtro Data -->
-                <div>
-                    <h3 class="text-sm font-medium text-gray-700 mb-1">Filtra per Data</h3>
-                    <div class="flex gap-2">
-                        <input type="date" id="start-date" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                        <input type="date" id="end-date" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                    </div>
-                </div>
-                <!-- Filtro Quote -->
-                <div>
-                     <h3 class="text-sm font-medium text-gray-700 mb-1">Filtra per Quota</h3>
-                     <div class="flex gap-2">
-                        <input type="number" id="min-odds" placeholder="Min" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                        <input type="number" id="max-odds" placeholder="Max" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                    </div>
-                </div>
-                <!-- Filtro Multi-Selezione -->
-                <div>
-                     <h3 class="text-sm font-medium text-gray-700 mb-1">Campionato / Mercato / Esito</h3>
-                     <div class="flex gap-2">
-                        <div id="campionato-multiselect" class="multiselect-container flex-1"></div>
-                        <div id="mercato-multiselect" class="multiselect-container flex-1"></div>
-                        <select id="esito-filter" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+                <!-- Pannello Filtri Unificato -->
+                <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                     <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Filtri di Ricerca</h2>
+                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700">Periodo da</label>
+                            <input type="date" id="start-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+                        <div>
+                             <label for="end-date" class="block text-sm font-medium text-gray-700">a</label>
+                            <input type="date" id="end-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700">Quota (min/max)</label>
+                            <div class="flex gap-2 mt-1">
+                                <input type="number" id="min-odds" placeholder="Min" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                                <input type="number" id="max-odds" placeholder="Max" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                            </div>
+                         </div>
+                         <div class="flex gap-2">
+                             <div id="campionato-multiselect" class="multiselect-container flex-1"></div>
+                             <div id="mercato-multiselect" class="multiselect-container flex-1"></div>
+                             <select id="esito-filter" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 h-10 mt-1"></select>
+                         </div>
+                     </div>
+                     <div class="mt-4 flex flex-col sm:flex-row gap-2">
+                         <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtri</button>
+                         <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Filtri</button>
+                         <button id="export-csv-btn" class="sm:ml-auto bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 text-sm">Esporta CSV Filtrati</button>
                      </div>
                 </div>
-                 <!-- Azioni -->
-                <div>
-                    <h3 class="text-sm font-medium text-gray-700 mb-1">Azioni sui Dati</h3>
-                     <div class="flex flex-col sm:flex-row gap-2">
-                        <button id="clear-filter-btn" class="w-full bg-gray-200 text-gray-800 font-bold py-2 px-3 rounded-lg hover:bg-gray-300 text-sm">Reset</button>
-                        <button id="export-csv-btn" class="w-full bg-green-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-green-600 text-sm">Esporta CSV</button>
-                        <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-yellow-600 text-sm">Cancella Filtrati</button>
-                        <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-red-700 text-sm">Cancella Tutto</button>
+
+                <!-- Tabella Pronostici -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
+                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
+                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
+                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
+                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
+                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
+                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
+                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="8" class="text-center p-8 text-gray-500">Caricamento dati...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Tabella Pronostici -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
-                        <tr><td colspan="8" class="text-center p-8 text-gray-500">Connessione a Firebase in corso...</td></tr>
-                    </tbody>
-                </table>
+            <!-- Scheda Gestione Database -->
+            <div id="gestione-view" class="hidden">
+                <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                    <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Caricamento e Aggiornamento</h2>
+                    <div class="flex flex-col md:flex-row gap-6 items-center">
+                         <div class="flex-1 w-full">
+                            <label for="file-uploader" class="block text-sm font-medium text-gray-700 mb-1">1. Carica il tuo file (.xlsx o .csv)</label>
+                            <input type="file" id="file-uploader" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
+                        </div>
+                        <button id="import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm disabled:bg-gray-400" disabled>Importa Dati</button>
+                        <div class="border-t md:border-t-0 md:border-l border-gray-200 my-4 md:my-0 md:mx-4 h-auto md:h-12"></div>
+                        <div class="flex-1 w-full">
+                             <p class="text-sm font-medium text-gray-700">2. Aggiorna Risultati</p>
+                            <p class="text-xs text-gray-500">Cerca i risultati per le partite passate e non ancora definite.</p>
+                        </div>
+                        <button id="fetch-results-btn" class="w-full md:w-auto bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm disabled:bg-gray-400" disabled>✨ Aggiorna Risultati</button>
+                    </div>
+                </div>
+                
+                <div class="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-6 shadow-md mt-10">
+                     <h2 class="text-2xl font-semibold mb-4 text-red-800">Zona Pericolo</h2>
+                     <p class="mb-4 text-red-700">Le azioni in questa sezione sono irreversibili. Usare con cautela.</p>
+                     <div class="flex flex-col sm:flex-row gap-4">
+                        <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-sm">Cancella Solo Dati Filtrati</button>
+                        <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm">Cancella Intero Database</button>
+                    </div>
+                </div>
+                <p id="user-id-display" class="text-xs text-gray-400 mt-4 text-center"></p>
             </div>
         </div>
     </div>
@@ -269,83 +285,104 @@
         };
 
         // --- Elementi del DOM ---
-        const fileUploader = document.getElementById('file-uploader');
-        const importBtn = document.getElementById('import-btn');
-        const fetchResultsBtn = document.getElementById('fetch-results-btn');
-        const tipsTableBody = document.getElementById('tips-table-body');
-        const loaderOverlay = document.getElementById('loader-overlay');
-        const loaderText = document.getElementById('loader-text');
-        const modal = document.getElementById('modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalBody = document.getElementById('modal-body');
-        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
-        const modalCancelBtn = document.getElementById('modal-cancel-btn');
-        const modalCloseBtnX = document.getElementById('modal-close-btn-x');
-        const editModal = document.getElementById('edit-modal');
-        const editModalMatchInfo = document.getElementById('edit-modal-match-info');
-        const editModalCloseBtnX = document.getElementById('edit-modal-close-btn-x');
-        const editModalSaveBtn = document.getElementById('edit-modal-save-btn');
-        const editForm = document.getElementById('edit-form');
-        const editDocId = document.getElementById('edit-doc-id');
-        const editFtScore = document.getElementById('edit-ft-score');
-        const editHtScore = document.getElementById('edit-ht-score');
-        const startDateInput = document.getElementById('start-date');
-        const endDateInput = document.getElementById('end-date');
-        const minOddsInput = document.getElementById('min-odds');
-        const maxOddsInput = document.getElementById('max-odds');
-        const filterBtn = document.getElementById('filter-btn');
-        const clearFilterBtn = document.getElementById('clear-filter-btn');
-        const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
-        const deleteAllBtn = document.getElementById('delete-all-btn');
-        const campionatoMultiselect = document.getElementById('campionato-multiselect');
-        const mercatoMultiselect = document.getElementById('mercato-multiselect');
-        const esitoFilter = document.getElementById('esito-filter');
-        const exportCsvBtn = document.getElementById('export-csv-btn');
+        // Vengono duplicati per le due viste
+        const ui = {
+            fileUploader: document.getElementById('file-uploader'),
+            importBtn: document.getElementById('import-btn'),
+            fetchResultsBtn: document.getElementById('fetch-results-btn'),
+            userIdDisplay: document.getElementById('user-id-display'),
+            tipsTableBody: document.getElementById('tips-table-body'),
+            loaderOverlay: document.getElementById('loader-overlay'),
+            loaderText: document.getElementById('loader-text'),
+            modal: document.getElementById('modal'),
+            modalTitle: document.getElementById('modal-title'),
+            modalBody: document.getElementById('modal-body'),
+            modalConfirmBtn: document.getElementById('modal-confirm-btn'),
+            modalCancelBtn: document.getElementById('modal-cancel-btn'),
+            modalCloseBtnX: document.getElementById('modal-close-btn-x'),
+            editModal: document.getElementById('edit-modal'),
+            editModalMatchInfo: document.getElementById('edit-modal-match-info'),
+            editModalCloseBtnX: document.getElementById('edit-modal-close-btn-x'),
+            editModalSaveBtn: document.getElementById('edit-modal-save-btn'),
+            editForm: document.getElementById('edit-form'),
+            editDocId: document.getElementById('edit-doc-id'),
+            editFtScore: document.getElementById('edit-ft-score'),
+            editHtScore: document.getElementById('edit-ht-score'),
+            startDateInput: document.getElementById('start-date'),
+            endDateInput: document.getElementById('end-date'),
+            minOddsInput: document.getElementById('min-odds'),
+            maxOddsInput: document.getElementById('max-odds'),
+            filterBtn: document.getElementById('filter-btn'),
+            clearFilterBtn: document.getElementById('clear-filter-btn'),
+            deleteFilteredBtn: document.getElementById('delete-filtered-btn'),
+            deleteAllBtn: document.getElementById('delete-all-btn'),
+            campionatoMultiselect: document.getElementById('campionato-multiselect'),
+            mercatoMultiselect: document.getElementById('mercato-multiselect'),
+            esitoFilter: document.getElementById('esito-filter'),
+            exportCsvBtn: document.getElementById('export-csv-btn'),
+            totalPartiteEl: document.getElementById('total-partite'),
+            partiteVinteEl: document.getElementById('partite-vinte'),
+            partitePerseEl: document.getElementById('partite-perse'),
+            percentualeVinteEl: document.getElementById('percentuale-vinte'),
+            dashboardView: document.getElementById('dashboard-view'),
+            gestioneView: document.getElementById('gestione-view'),
+            showDashboardBtn: document.getElementById('show-dashboard-btn'),
+            showGestioneBtn: document.getElementById('show-gestione-btn')
+        };
         
-        const totalPartiteEl = document.getElementById('total-partite');
-        const partiteVinteEl = document.getElementById('partite-vinte');
-        const partitePerseEl = document.getElementById('partite-perse');
-        const percentualeVinteEl = document.getElementById('percentuale-vinte');
+        // --- Navigazione a schede ---
+        ui.showDashboardBtn.addEventListener('click', () => {
+            ui.dashboardView.classList.remove('hidden');
+            ui.gestioneView.classList.add('hidden');
+            ui.showDashboardBtn.classList.replace('tab-inactive', 'tab-active');
+            ui.showGestioneBtn.classList.replace('tab-active', 'tab-inactive');
+        });
 
+        ui.showGestioneBtn.addEventListener('click', () => {
+            ui.gestioneView.classList.remove('hidden');
+            ui.dashboardView.classList.add('hidden');
+            ui.showGestioneBtn.classList.replace('tab-inactive', 'tab-active');
+            ui.showDashboardBtn.classList.replace('tab-active', 'tab-inactive');
+        });
 
         // --- Funzioni di Utility ---
         const showLoader = (text) => {
-            loaderText.textContent = text;
-            loaderOverlay.classList.remove('hidden');
+            ui.loaderText.textContent = text;
+            ui.loaderOverlay.classList.remove('hidden');
         };
         const hideLoader = () => {
-            loaderOverlay.classList.add('hidden');
+            ui.loaderOverlay.classList.add('hidden');
         };
 
         const showModal = (title, message, type = 'info', onConfirm = null) => {
-            modalTitle.textContent = title;
-            modalBody.innerHTML = message;
+            ui.modalTitle.textContent = title;
+            ui.modalBody.innerHTML = message;
             
-            modalConfirmBtn.onclick = onConfirm || hideModal;
-            modalConfirmBtn.textContent = onConfirm ? 'Conferma' : 'OK';
-            modalCancelBtn.style.display = onConfirm ? 'inline-block' : 'none';
+            ui.modalConfirmBtn.onclick = onConfirm || hideModal;
+            ui.modalConfirmBtn.textContent = onConfirm ? 'Conferma' : 'OK';
+            ui.modalCancelBtn.style.display = onConfirm ? 'inline-block' : 'none';
 
             const titleBaseClasses = 'text-xl font-bold';
             const buttonBaseClasses = 'text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 shadow-sm';
             
             if (type === 'error') {
-                modalTitle.className = `${titleBaseClasses} text-red-700`;
-                modalConfirmBtn.className = `${buttonBaseClasses} bg-red-600 hover:bg-red-700`;
+                ui.modalTitle.className = `${titleBaseClasses} text-red-700`;
+                ui.modalConfirmBtn.className = `${buttonBaseClasses} bg-red-600 hover:bg-red-700`;
             } else {
-                modalTitle.className = `${titleBaseClasses} text-gray-800`;
-                modalConfirmBtn.className = `${buttonBaseClasses} bg-violet-600 hover:bg-violet-700`;
+                ui.modalTitle.className = `${titleBaseClasses} text-gray-800`;
+                ui.modalConfirmBtn.className = `${buttonBaseClasses} bg-violet-600 hover:bg-violet-700`;
             }
             
-            modal.classList.remove('hidden');
+            ui.modal.classList.remove('hidden');
         };
 
         const hideModal = () => {
-            modal.classList.add('hidden');
+            ui.modal.classList.add('hidden');
         }
 
-        modalConfirmBtn.addEventListener('click', hideModal);
-        modalCancelBtn.addEventListener('click', hideModal);
-        modalCloseBtnX.addEventListener('click', hideModal);
+        ui.modalConfirmBtn.addEventListener('click', hideModal);
+        ui.modalCancelBtn.addEventListener('click', hideModal);
+        ui.modalCloseBtnX.addEventListener('click', hideModal);
 
         function estraiDataOra(txt) {
             if (!txt || typeof txt !== 'string') return null;
@@ -373,9 +410,9 @@
         onAuthStateChanged(auth, user => {
             if (user) {
                 userId = user.uid;
-                document.getElementById('user-id-display').textContent = `UserID: ${userId}`;
-                importBtn.disabled = false;
-                fetchResultsBtn.disabled = false;
+                ui.userIdDisplay.textContent = `UserID: ${userId}`;
+                ui.importBtn.disabled = false;
+                ui.fetchResultsBtn.disabled = false;
                 listenToTips();
             } else {
                 signInAnonymously(auth).catch(error => {
@@ -450,9 +487,9 @@
         }
 
         function renderTable(tips) {
-            tipsTableBody.innerHTML = '';
+            ui.tipsTableBody.innerHTML = '';
             if (tips.length === 0) {
-                tipsTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500">Nessun dato corrisponde ai filtri selezionati.</td></tr>';
+                ui.tipsTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500">Nessun dato corrisponde ai filtri selezionati.</td></tr>';
                 return;
             }
 
@@ -492,16 +529,16 @@
                         <td class="table-cell text-center">
                              <div class="flex justify-center items-center gap-1">
                                 <button class="edit-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${tip.id}" data-hometeam="${tip.homeTeam}" data-awayteam="${tip.awayTeam}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                                 </button>
                                 <button class="delete-row-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${tip.id}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
                                 </button>
                             </div>
                         </td>
                     </tr>
                 `;
-                tipsTableBody.innerHTML += row;
+                ui.tipsTableBody.innerHTML += row;
             });
         }
         
@@ -540,8 +577,8 @@
             const mercati = [...new Set(allTips.map(tip => tip.market).filter(m => m))].sort();
             const esiti = ['Vinto', 'Perso', 'Attesa', 'N/D'];
 
-            createMultiSelect(campionatoMultiselect, campionati, 'Campionati');
-            createMultiSelect(mercatoMultiselect, mercati, 'Mercati');
+            createMultiSelect(ui.campionatoMultiselect, campionati, 'Campionati');
+            createMultiSelect(ui.mercatoMultiselect, mercati, 'Mercati');
 
             const populate = (select, options, valueMap = null) => {
                 const currentValue = select.value;
@@ -553,7 +590,7 @@
                 });
             };
             
-            populate(esitoFilter, esiti, { 'Vinto': 'V', 'Perso': 'P', 'Attesa': 'Attesa', 'N/D': 'N/D' });
+            populate(ui.esitoFilter, esiti, { 'Vinto': 'V', 'Perso': 'P', 'Attesa': 'Attesa', 'N/D': 'N/D' });
         }
         
         function updateStatsBox(tips) {
@@ -563,30 +600,30 @@
             const totali = vinte + perse;
             const percentuale = totali > 0 ? (vinte / totali) * 100 : 0;
 
-            totalPartiteEl.textContent = totali;
-            partiteVinteEl.textContent = vinte;
-            partitePerseEl.textContent = perse;
-            percentualeVinteEl.textContent = `${percentuale.toFixed(1)}%`;
+            ui.totalPartiteEl.textContent = totali;
+            ui.partiteVinteEl.textContent = vinte;
+            ui.partitePerseEl.textContent = perse;
+            ui.percentualeVinteEl.textContent = `${percentuale.toFixed(1)}%`;
 
-            percentualeVinteEl.classList.remove('text-green-600', 'text-red-600', 'text-gray-900');
+            ui.percentualeVinteEl.classList.remove('text-green-600', 'text-red-600', 'text-gray-900');
             if (percentuale >= 50) {
-                percentualeVinteEl.classList.add('text-green-600');
+                ui.percentualeVinteEl.classList.add('text-green-600');
             } else if (totali > 0) {
-                 percentualeVinteEl.classList.add('text-red-600');
+                 ui.percentualeVinteEl.classList.add('text-red-600');
             } else {
-                percentualeVinteEl.classList.add('text-gray-900');
+                ui.percentualeVinteEl.classList.add('text-gray-900');
             }
         }
 
-        importBtn.addEventListener('click', async () => {
-            const file = fileUploader.files[0];
+        ui.importBtn.addEventListener('click', async () => {
+            const file = ui.fileUploader.files[0];
             if (!file) {
                 showModal('Attenzione', "Per favore, seleziona un file.");
                 return;
             }
 
             showLoader('Importazione dati in corso...');
-            importBtn.disabled = true;
+            ui.importBtn.disabled = true;
 
             const reader = new FileReader();
             reader.onload = async (event) => {
@@ -676,17 +713,17 @@
                 }
                 hideLoader();
                 showModal('Operazione Completata', `Importazione completata! ${importedCount} nuovi pronostici aggiunti. ${skippedCount} duplicati sono stati ignorati.`);
-                importBtn.disabled = false;
-                fileUploader.value = '';
+                ui.importBtn.disabled = false;
+                ui.fileUploader.value = '';
             };
             reader.readAsArrayBuffer(file);
         });
 
-        fetchResultsBtn.addEventListener('click', async () => {
+        ui.fetchResultsBtn.addEventListener('click', async () => {
             if (!userId) return;
 
             showLoader('Ricerca risultati in corso...');
-            fetchResultsBtn.disabled = true;
+            ui.fetchResultsBtn.disabled = true;
 
             const now = new Date();
             const q = query(collection(db, TIPS_COLLECTION), 
@@ -702,7 +739,7 @@
             if (pendingTips.length === 0) {
                 showModal("Nessun Aggiornamento", "Non ci sono partite passate in attesa di risultato.");
                 hideLoader();
-                fetchResultsBtn.disabled = false;
+                ui.fetchResultsBtn.disabled = false;
                 return;
             }
             
@@ -738,7 +775,7 @@
 
             hideLoader();
             showModal('Operazione Completata', `Aggiornamento terminato! ${updatedCount} risultati sono stati trovati e aggiornati.`);
-            fetchResultsBtn.disabled = false;
+            ui.fetchResultsBtn.disabled = false;
         });
 
         async function callGeminiAPI(userQuery, retries = 3) {
@@ -806,7 +843,7 @@
                 if (isVittoriaCasa) return g1 > g2 ? "V" : "P";
                 if (isVittoriaTrasferta) return g1 < g2 ? "V" : "P";
                 if (isPareggio) return g1 === g2 ? "V" : "P";
-
+                
                 if (cleanMarket.includes("primo tempo")) {
                     if (cleanMarket.includes("oltre 0.5")) return (ht1 + ht2) > 0.5 ? "V" : "P";
                 }
@@ -844,7 +881,7 @@
             return "";
         }
         
-        tipsTableBody.addEventListener('click', (event) => {
+        ui.tipsTableBody.addEventListener('click', (event) => {
             const button = event.target.closest('button');
             if (!button) return;
 
@@ -853,10 +890,10 @@
                 const homeTeam = button.dataset.hometeam;
                 const awayTeam = button.dataset.awayteam;
                 
-                editDocId.value = docId;
-                editModalMatchInfo.textContent = `${homeTeam} vs ${awayTeam}`;
-                editForm.reset();
-                editModal.classList.remove('hidden');
+                ui.editDocId.value = docId;
+                ui.editModalMatchInfo.textContent = `${homeTeam} vs ${awayTeam}`;
+                ui.editForm.reset();
+                ui.editModal.classList.remove('hidden');
             } else if (button.classList.contains('delete-row-btn')) {
                 const docId = button.dataset.id;
                 showModal('Conferma Cancellazione', 'Sei sicuro di voler cancellare questa partita?', 'error', async () => {
@@ -865,14 +902,14 @@
             }
         });
 
-        editModalCloseBtnX.addEventListener('click', () => {
-            editModal.classList.add('hidden');
+        ui.editModalCloseBtnX.addEventListener('click', () => {
+            ui.editModal.classList.add('hidden');
         });
 
-        editModalSaveBtn.addEventListener('click', async () => {
-            const docId = editDocId.value;
-            const ftScore = editFtScore.value.trim();
-            const htScore = editHtScore.value.trim();
+        ui.editModalSaveBtn.addEventListener('click', async () => {
+            const docId = ui.editDocId.value;
+            const ftScore = ui.editFtScore.value.trim();
+            const htScore = ui.editHtScore.value.trim();
 
             if (!docId || !ftScore) {
                 showModal('Errore', 'Il risultato finale (FT) è obbligatorio.', 'error');
@@ -899,14 +936,14 @@
             });
             
             hideLoader();
-            editModal.classList.add('hidden');
+            ui.editModal.classList.add('hidden');
         });
 
         function applyAllFilters() {
-            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            const startDate = ui.startDateInput.value ? new Date(ui.startDateInput.value) : null;
             if (startDate) startDate.setHours(0, 0, 0, 0); 
             
-            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+            const endDate = ui.endDateInput.value ? new Date(ui.endDateInput.value) : null;
             if (endDate) endDate.setHours(23, 59, 59, 999);
             
             currentFilters = {
@@ -914,9 +951,9 @@
                 endDate,
                 campionati: getSelectedOptions('campionato-multiselect'),
                 mercati: getSelectedOptions('mercato-multiselect'),
-                esito: esitoFilter.value,
-                minOdds: minOddsInput.value ? parseFloat(minOddsInput.value) : null,
-                maxOdds: maxOddsInput.value ? parseFloat(maxOddsInput.value) : null,
+                esito: ui.esitoFilter.value,
+                minOdds: ui.minOddsInput.value ? parseFloat(ui.minOddsInput.value) : null,
+                maxOdds: ui.maxOddsInput.value ? parseFloat(ui.maxOddsInput.value) : null,
             };
             
             // Aggiorna il testo del pulsante multiselect
@@ -926,25 +963,25 @@
             applyFiltersAndRender();
         }
         
-        filterBtn.addEventListener('click', applyAllFilters);
+        ui.filterBtn.addEventListener('click', applyAllFilters);
         document.body.addEventListener('change', e => {
              if (e.target.closest('.multiselect-dropdown') || e.target.id === 'esito-filter') {
                  applyAllFilters();
              }
         });
 
-        clearFilterBtn.addEventListener('click', () => {
-            startDateInput.value = '';
-            endDateInput.value = '';
-            minOddsInput.value = '';
-            maxOddsInput.value = '';
-            esitoFilter.value = '';
+        ui.clearFilterBtn.addEventListener('click', () => {
+            ui.startDateInput.value = '';
+            ui.endDateInput.value = '';
+            ui.minOddsInput.value = '';
+            ui.maxOddsInput.value = '';
+            ui.esitoFilter.value = '';
             
             document.querySelectorAll('.multiselect-dropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
             applyAllFilters();
         });
         
-        deleteAllBtn.addEventListener('click', () => {
+        ui.deleteAllBtn.addEventListener('click', () => {
             showModal(
                 'Conferma Cancellazione Totale', 
                 'Sei assolutamente sicuro di voler cancellare TUTTI i pronostici dal database? L\'azione è irreversibile.', 
@@ -966,9 +1003,9 @@
             );
         });
         
-        deleteFilteredBtn.addEventListener('click', () => {
-             const filteredTipIds = document.getElementById('tips-table-body').querySelectorAll('tr');
-             const idsToDelete = Array.from(filteredTipIds).map(tr => tr.querySelector('.edit-btn')?.dataset.id).filter(id => id);
+        ui.deleteFilteredBtn.addEventListener('click', () => {
+             const rows = document.getElementById('tips-table-body').querySelectorAll('tr');
+             const idsToDelete = Array.from(rows).map(tr => tr.querySelector('.edit-btn')?.dataset.id).filter(id => id);
 
             if (idsToDelete.length === 0) {
                  showModal('Azione non possibile', 'Nessun dato corrisponde ai filtri attuali. Impossibile cancellare.', 'error');
@@ -994,46 +1031,33 @@
             );
         });
 
-        exportCsvBtn.addEventListener('click', () => {
-            const filteredTips = allTips.filter(tip => {
-                 let pass = true;
-                if (currentFilters.startDate && (tip.matchDate.seconds * 1000) < currentFilters.startDate.getTime()) pass = false;
-                if (currentFilters.endDate && (tip.matchDate.seconds * 1000) > currentFilters.endDate.getTime()) pass = false;
-                if (currentFilters.minOdds !== null && (!tip.odds || parseFloat(tip.odds) < currentFilters.minOdds)) pass = false;
-                if (currentFilters.maxOdds !== null && (!tip.odds || parseFloat(tip.odds) > currentFilters.maxOdds)) pass = false;
-                if (currentFilters.campionati.length > 0 && !currentFilters.campionati.includes(tip.campionato)) pass = false;
-                if (currentFilters.mercati.length > 0 && !currentFilters.mercati.includes(tip.market)) pass = false;
-                if (currentFilters.esito) {
-                    if (currentFilters.esito === 'V' && tip.outcome !== 'V') pass = false;
-                    if (currentFilters.esito === 'P' && tip.outcome !== 'P') pass = false;
-                    if (currentFilters.esito === 'N/D' && !(tip.status === 'completed' && !tip.outcome)) pass = false;
-                    if (currentFilters.esito === 'Attesa' && !(tip.status === 'pending' || tip.status === 'fetching')) pass = false;
-                }
-                return pass;
-            });
-            
-            if (filteredTips.length === 0) {
-                showModal('Esportazione non possibile', 'Nessun dato da esportare per i filtri selezionati.', 'error');
+        ui.exportCsvBtn.addEventListener('click', () => {
+             const rows = document.getElementById('tips-table-body').querySelectorAll('tr');
+             if(rows.length === 0 || (rows.length === 1 && rows[0].querySelectorAll('td').length > 1 && rows[0].querySelector('td').colSpan > 1)) {
+                 showModal('Esportazione non possibile', 'Nessun dato da esportare per i filtri selezionati.', 'error');
                 return;
-            }
+             }
 
             let csvContent = "data:text/csv;charset=utf-8,";
-            const headers = ["Data", "Campionato", "Squadra Casa", "Squadra Trasferta", "Mercato", "Quota Media", "Risultato FT", "Risultato HT", "Esito"];
+            const headers = ["Data", "Campionato", "Partita", "Mercato", "Quota Media", "Risultato FT", "Risultato HT", "Esito"];
             csvContent += headers.join(",") + "\r\n";
+            
+            const filteredTipIds = new Set(Array.from(rows).map(tr => tr.querySelector('.edit-btn')?.dataset.id).filter(id => id));
+            const tipsToExport = allTips.filter(tip => filteredTipIds.has(tip.id));
 
-            filteredTips.forEach(tip => {
+            tipsToExport.forEach(tip => {
                 const esitoText = tip.outcome === 'V' ? 'Vinto' : (tip.outcome === 'P' ? 'Perso' : 'N/D');
+                const partita = `${tip.homeTeam || ''} - ${tip.awayTeam || ''}`;
                 const row = [
                     new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT'),
                     `"${tip.campionato || ''}"`,
-                    `"${tip.homeTeam || ''}"`,
-                    `"${tip.awayTeam || ''}"`,
+                    `"${partita}"`,
                     `"${tip.market || ''}"`,
                     tip.odds || '',
                     tip.resultFT || '',
                     tip.resultHT || '',
                     esitoText
-                ];
+                ].map(val => `"${String(val).replace(/"/g, '""')}"`); // Escape double quotes
                 csvContent += row.join(",") + "\r\n";
             });
 
