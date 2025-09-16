@@ -14,21 +14,19 @@
         .pending { background-color: #fef9c3; color: #854d0e; }
         .fetching { background-color: #e0e7ff; color: #3730a3; }
         .table-cell { padding: 0.75rem; vertical-align: middle; }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+        .loader-sm {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #fff;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 16px;
+            height: 16px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .multiselect-container {
-            position: relative;
-        }
+        .multiselect-container { position: relative; }
         .multiselect-dropdown {
             display: none;
             position: absolute;
@@ -36,38 +34,26 @@
             border: 1px solid #ddd;
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-height: 250px; /* Aumentato */
-            width: 20rem; /* Aumentato */
+            max-height: 250px;
+            width: 20rem;
             overflow-y: auto;
             z-index: 10;
         }
         .multiselect-dropdown label {
-            display: block;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            white-space: nowrap;
+            display: block; padding: 0.5rem 1rem; cursor: pointer; white-space: nowrap;
         }
-        .multiselect-dropdown label:hover {
-            background-color: #f3f4f6;
+        .multiselect-dropdown label:hover { background-color: #f3f4f6; }
+        .details-arrow::-webkit-details-marker { display: none; }
+        .details-arrow summary:after {
+            content: ' ▼';
+            font-size: 0.8em;
         }
-        .tab-active {
-            border-color: #6d28d9;
-            color: #6d28d9;
-        }
-        .tab-inactive {
-            border-color: transparent;
-            color: #6b7280;
+        details[open] .details-arrow summary:after {
+            content: ' ▲';
         }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
-
-    <div id="loader-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white p-8 rounded-lg shadow-xl text-center">
-            <div class="loader mx-auto mb-4"></div>
-            <p id="loader-text" class="text-lg font-medium text-gray-700">Elaborazione in corso...</p>
-        </div>
-    </div>
     
     <!-- Modal Generico -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
@@ -122,39 +108,57 @@
             <p class="text-lg text-gray-600 mt-2">La tua dashboard di analisi e gestione dei pronostici sportivi.</p>
         </header>
 
-        <!-- Navigazione a Schede -->
-        <div class="mb-8 flex justify-center border-b border-gray-200">
-            <button id="show-dashboard-btn" class="px-6 py-3 text-lg font-medium border-b-2 tab-active">Dashboard & Analisi</button>
-            <button id="show-gestione-btn" class="px-6 py-3 text-lg font-medium border-b-2 tab-inactive">Gestione Database</button>
+        <!-- Statistiche Rapide -->
+        <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
+                <dd id="total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
+            </div>
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Vinte</dt>
+                <dd id="partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
+            </div>
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Perse</dt>
+                <dd id="partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
+            </div>
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">% Vinte</dt>
+                <dd id="percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
+            </div>
         </div>
 
-        <!-- Contenuto delle Schede -->
-        <div>
-            <!-- Scheda Dashboard -->
-            <div id="dashboard-view">
-                <!-- Statistiche Rapide -->
-                <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                        <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
-                        <dd id="total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
+        <!-- Pannello di Controllo Unificato -->
+        <details class="bg-white rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-violet-200 transition-all">
+            <summary class="text-2xl font-semibold cursor-pointer details-arrow">Pannello di Controllo e Filtri</summary>
+            <div class="mt-6">
+                 <!-- Caricamento e Aggiornamento -->
+                 <div class="border-b pb-6 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Gestione Database</h3>
+                    <div class="flex flex-col md:flex-row gap-6 items-center">
+                        <div class="flex-1 w-full">
+                            <label for="file-uploader" class="block text-sm font-medium text-gray-700 mb-1">Carica il tuo file (.xlsx o .csv)</label>
+                            <input type="file" id="file-uploader" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
+                        </div>
+                        <button id="import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm disabled:bg-gray-400 flex items-center gap-2 justify-center" disabled>
+                            <span class="btn-text">Importa Dati</span>
+                            <div class="loader-sm hidden"></div>
+                        </button>
+                        <div class="border-t md:border-t-0 md:border-l border-gray-200 my-4 md:my-0 md:mx-4 h-auto md:h-12"></div>
+                        <div class="flex-1 w-full text-center md:text-left">
+                            <p class="text-sm font-medium text-gray-700">Aggiorna Risultati</p>
+                            <p class="text-xs text-gray-500">Cerca i risultati per le partite passate.</p>
+                        </div>
+                        <button id="fetch-results-btn" class="w-full md:w-auto bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm disabled:bg-gray-400 flex items-center gap-2 justify-center" disabled>
+                           <span class="btn-text">✨ Aggiorna</span>
+                           <div class="loader-sm hidden"></div>
+                        </button>
                     </div>
-                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                        <dt class="truncate text-sm font-medium text-gray-500">Vinte</dt>
-                        <dd id="partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
-                    </div>
-                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                        <dt class="truncate text-sm font-medium text-gray-500">Perse</dt>
-                        <dd id="partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
-                    </div>
-                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                        <dt class="truncate text-sm font-medium text-gray-500">% Vinte</dt>
-                        <dd id="percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
-                    </div>
-                </div>
+                 </div>
 
-                <!-- Pannello Filtri Unificato -->
-                <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                     <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Filtri di Ricerca</h2>
+                 <!-- Filtri -->
+                 <div>
+                     <h3 class="text-lg font-medium text-gray-800 mb-4">Filtri di Ricerca</h3>
                      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div>
                             <label for="start-date" class="block text-sm font-medium text-gray-700">Periodo da</label>
@@ -180,64 +184,45 @@
                      <div class="mt-4 flex flex-col sm:flex-row gap-2">
                          <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtri</button>
                          <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Filtri</button>
-                         <button id="export-csv-btn" class="sm:ml-auto bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 text-sm">Esporta CSV Filtrati</button>
+                         <button id="export-csv-btn" class="sm:ml-auto bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 text-sm">Esporta CSV</button>
                      </div>
-                </div>
-
-                <!-- Tabella Pronostici -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
-                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
-                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
-                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
-                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
-                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
-                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
-                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
-                                <tr><td colspan="8" class="text-center p-8 text-gray-500">Caricamento dati...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                 </div>
             </div>
+        </details>
+        
+        <!-- Zona Pericolo -->
+        <details class="bg-red-50 border border-red-200 rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-red-200 transition-all">
+            <summary class="text-xl font-semibold cursor-pointer details-arrow text-red-800">Zona Pericolo (Cancellazione Dati)</summary>
+             <div class="mt-4 flex flex-col sm:flex-row gap-4">
+                <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-sm">Cancella Solo Dati Visualizzati</button>
+                <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm">Cancella Intero Database</button>
+            </div>
+             <p class="text-xs text-red-600 mt-2">Attenzione: queste azioni sono irreversibili.</p>
+        </details>
 
-            <!-- Scheda Gestione Database -->
-            <div id="gestione-view" class="hidden">
-                <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                    <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Caricamento e Aggiornamento</h2>
-                    <div class="flex flex-col md:flex-row gap-6 items-center">
-                         <div class="flex-1 w-full">
-                            <label for="file-uploader" class="block text-sm font-medium text-gray-700 mb-1">1. Carica il tuo file (.xlsx o .csv)</label>
-                            <input type="file" id="file-uploader" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
-                        </div>
-                        <button id="import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm disabled:bg-gray-400" disabled>Importa Dati</button>
-                        <div class="border-t md:border-t-0 md:border-l border-gray-200 my-4 md:my-0 md:mx-4 h-auto md:h-12"></div>
-                        <div class="flex-1 w-full">
-                             <p class="text-sm font-medium text-gray-700">2. Aggiorna Risultati</p>
-                            <p class="text-xs text-gray-500">Cerca i risultati per le partite passate e non ancora definite.</p>
-                        </div>
-                        <button id="fetch-results-btn" class="w-full md:w-auto bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm disabled:bg-gray-400" disabled>✨ Aggiorna Risultati</button>
-                    </div>
-                </div>
-                
-                <div class="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-6 shadow-md mt-10">
-                     <h2 class="text-2xl font-semibold mb-4 text-red-800">Zona Pericolo</h2>
-                     <p class="mb-4 text-red-700">Le azioni in questa sezione sono irreversibili. Usare con cautela.</p>
-                     <div class="flex flex-col sm:flex-row gap-4">
-                        <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-sm">Cancella Solo Dati Filtrati</button>
-                        <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm">Cancella Intero Database</button>
-                    </div>
-                </div>
-                <p id="user-id-display" class="text-xs text-gray-400 mt-4 text-center"></p>
+        <!-- Tabella Pronostici -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
+                        <tr><td colspan="8" class="text-center p-8 text-gray-500">Caricamento dati...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+        <p id="user-id-display" class="text-xs text-gray-400 mt-4 text-center"></p>
     </div>
 
     <script type="module">
@@ -285,15 +270,12 @@
         };
 
         // --- Elementi del DOM ---
-        // Vengono duplicati per le due viste
         const ui = {
             fileUploader: document.getElementById('file-uploader'),
             importBtn: document.getElementById('import-btn'),
             fetchResultsBtn: document.getElementById('fetch-results-btn'),
             userIdDisplay: document.getElementById('user-id-display'),
             tipsTableBody: document.getElementById('tips-table-body'),
-            loaderOverlay: document.getElementById('loader-overlay'),
-            loaderText: document.getElementById('loader-text'),
             modal: document.getElementById('modal'),
             modalTitle: document.getElementById('modal-title'),
             modalBody: document.getElementById('modal-body'),
@@ -324,36 +306,22 @@
             partiteVinteEl: document.getElementById('partite-vinte'),
             partitePerseEl: document.getElementById('partite-perse'),
             percentualeVinteEl: document.getElementById('percentuale-vinte'),
-            dashboardView: document.getElementById('dashboard-view'),
-            gestioneView: document.getElementById('gestione-view'),
-            showDashboardBtn: document.getElementById('show-dashboard-btn'),
-            showGestioneBtn: document.getElementById('show-gestione-btn')
         };
         
-        // --- Navigazione a schede ---
-        ui.showDashboardBtn.addEventListener('click', () => {
-            ui.dashboardView.classList.remove('hidden');
-            ui.gestioneView.classList.add('hidden');
-            ui.showDashboardBtn.classList.replace('tab-inactive', 'tab-active');
-            ui.showGestioneBtn.classList.replace('tab-active', 'tab-inactive');
-        });
-
-        ui.showGestioneBtn.addEventListener('click', () => {
-            ui.gestioneView.classList.remove('hidden');
-            ui.dashboardView.classList.add('hidden');
-            ui.showGestioneBtn.classList.replace('tab-inactive', 'tab-active');
-            ui.showDashboardBtn.classList.replace('tab-active', 'tab-inactive');
-        });
-
         // --- Funzioni di Utility ---
-        const showLoader = (text) => {
-            ui.loaderText.textContent = text;
-            ui.loaderOverlay.classList.remove('hidden');
+        const showLoaderOnButton = (button) => {
+            button.disabled = true;
+            button.querySelector('.btn-text').classList.add('hidden');
+            button.querySelector('.loader-sm').classList.remove('hidden');
         };
-        const hideLoader = () => {
-            ui.loaderOverlay.classList.add('hidden');
+        
+        const hideLoaderOnButton = (button, originalText) => {
+            button.disabled = false;
+            button.querySelector('.btn-text').textContent = originalText;
+            button.querySelector('.btn-text').classList.remove('hidden');
+            button.querySelector('.loader-sm').classList.add('hidden');
         };
-
+        
         const showModal = (title, message, type = 'info', onConfirm = null) => {
             ui.modalTitle.textContent = title;
             ui.modalBody.innerHTML = message;
@@ -622,8 +590,7 @@
                 return;
             }
 
-            showLoader('Importazione dati in corso...');
-            ui.importBtn.disabled = true;
+            showLoaderOnButton(ui.importBtn);
 
             const reader = new FileReader();
             reader.onload = async (event) => {
@@ -711,10 +678,10 @@
                         console.error("Errore nell'elaborazione della riga:", columns, e);
                     }
                 }
-                hideLoader();
+                hideLoaderOnButton(ui.importBtn, 'Importa Dati');
                 showModal('Operazione Completata', `Importazione completata! ${importedCount} nuovi pronostici aggiunti. ${skippedCount} duplicati sono stati ignorati.`);
-                ui.importBtn.disabled = false;
                 ui.fileUploader.value = '';
+                ui.showDashboardBtn.click();
             };
             reader.readAsArrayBuffer(file);
         });
@@ -722,8 +689,7 @@
         ui.fetchResultsBtn.addEventListener('click', async () => {
             if (!userId) return;
 
-            showLoader('Ricerca risultati in corso...');
-            ui.fetchResultsBtn.disabled = true;
+            showLoaderOnButton(ui.fetchResultsBtn);
 
             const now = new Date();
             const q = query(collection(db, TIPS_COLLECTION), 
@@ -738,8 +704,7 @@
 
             if (pendingTips.length === 0) {
                 showModal("Nessun Aggiornamento", "Non ci sono partite passate in attesa di risultato.");
-                hideLoader();
-                ui.fetchResultsBtn.disabled = false;
+                hideLoaderOnButton(ui.fetchResultsBtn, '✨ Aggiorna');
                 return;
             }
             
@@ -773,9 +738,9 @@
                 }
             }
 
-            hideLoader();
+            hideLoaderOnButton(ui.fetchResultsBtn, '✨ Aggiorna');
             showModal('Operazione Completata', `Aggiornamento terminato! ${updatedCount} risultati sono stati trovati e aggiornati.`);
-            ui.fetchResultsBtn.disabled = false;
+            ui.showDashboardBtn.click();
         });
 
         async function callGeminiAPI(userQuery, retries = 3) {
@@ -956,9 +921,8 @@
                 maxOdds: ui.maxOddsInput.value ? parseFloat(ui.maxOddsInput.value) : null,
             };
             
-            // Aggiorna il testo del pulsante multiselect
-             document.querySelector('#campionato-multiselect button').textContent = `Campionati (${currentFilters.campionati.length})`;
-             document.querySelector('#mercato-multiselect button').textContent = `Mercati (${currentFilters.mercati.length})`;
+             document.querySelector('#campionato-multiselect button').textContent = `Campionati (${currentFilters.campionati.length || 'Tutti'})`;
+             document.querySelector('#mercato-multiselect button').textContent = `Mercati (${currentFilters.mercati.length || 'Tutti'})`;
             
             applyFiltersAndRender();
         }
@@ -1048,16 +1012,17 @@
             tipsToExport.forEach(tip => {
                 const esitoText = tip.outcome === 'V' ? 'Vinto' : (tip.outcome === 'P' ? 'Perso' : 'N/D');
                 const partita = `${tip.homeTeam || ''} - ${tip.awayTeam || ''}`;
-                const row = [
+                const rowData = [
                     new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT'),
-                    `"${tip.campionato || ''}"`,
-                    `"${partita}"`,
-                    `"${tip.market || ''}"`,
+                    tip.campionato || '',
+                    partita,
+                    tip.market || '',
                     tip.odds || '',
                     tip.resultFT || '',
                     tip.resultHT || '',
                     esitoText
-                ].map(val => `"${String(val).replace(/"/g, '""')}"`); // Escape double quotes
+                ];
+                const row = rowData.map(val => `"${String(val).replace(/"/g, '""')}"`);
                 csvContent += row.join(",") + "\r\n";
             });
 
