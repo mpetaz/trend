@@ -6,7 +6,6 @@
     <title>Trendo - Gestione Pronostici</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Libreria per leggere i file XLSX -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -15,16 +14,6 @@
         .pending { background-color: #fef9c3; color: #854d0e; }
         .fetching { background-color: #e0e7ff; color: #3730a3; }
         .table-cell { padding: 0.75rem; vertical-align: middle; }
-        .filter-select {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C3.732 4.943 9.522 3 10 3s6.268 1.943 9.542 7c-3.274 5.057-9.062 7-9.542 7S3.732 15.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>');
-            background-repeat: no-repeat;
-            background-position: right 0.5rem center;
-            background-size: 1.25em 1.25em;
-            padding-right: 2rem;
-        }
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
@@ -36,6 +25,30 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        /* Stili per i filtri multi-selezione */
+        .multiselect-container {
+            position: relative;
+        }
+        .multiselect-dropdown {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            width: 100%;
+        }
+        .multiselect-dropdown label {
+            display: block;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+        .multiselect-dropdown label:hover {
+            background-color: #f3f4f6;
         }
     </style>
 </head>
@@ -147,36 +160,45 @@
         
         <!-- Filtri e Azioni -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Filtri e Azioni Avanzate</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Filtri e Azioni</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Filtro Data -->
                 <div>
-                    <h3 class="text-lg font-medium mb-2">Filtra per Data</h3>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div>
-                            <label for="start-date" class="block text-sm font-medium text-gray-700">Da</label>
-                            <input type="date" id="start-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                        </div>
-                        <div>
-                            <label for="end-date" class="block text-sm font-medium text-gray-700">A</label>
-                            <input type="date" id="end-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                        </div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-1">Filtra per Data</h3>
+                    <div class="flex gap-2">
+                        <input type="date" id="start-date" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                        <input type="date" id="end-date" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
                     </div>
                 </div>
+                <!-- Filtro Quote -->
                 <div>
-                    <h3 class="text-lg font-medium mb-2 text-red-700">Azioni di Cancellazione</h3>
-                     <div class="flex flex-col sm:flex-row gap-4">
-                        <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-sm">Cancella Dati Filtrati</button>
-                        <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm">Cancella Tutto</button>
+                     <h3 class="text-sm font-medium text-gray-700 mb-1">Filtra per Quota</h3>
+                     <div class="flex gap-2">
+                        <input type="number" id="min-odds" placeholder="Min" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                        <input type="number" id="max-odds" placeholder="Max" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
                     </div>
-                     <p class="text-xs text-gray-500 mt-2">Attenzione: queste azioni sono irreversibili.</p>
                 </div>
-            </div>
-            <div class="mt-4 flex gap-2">
-                <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtri</button>
-                <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Tutti i Filtri</button>
+                <!-- Filtro Multi-Selezione -->
+                <div>
+                     <h3 class="text-sm font-medium text-gray-700 mb-1">Campionato / Mercato / Esito</h3>
+                     <div class="flex gap-2">
+                        <div id="campionato-multiselect" class="multiselect-container flex-1"></div>
+                        <div id="mercato-multiselect" class="multiselect-container flex-1"></div>
+                        <select id="esito-filter" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+                     </div>
+                </div>
+                 <!-- Azioni -->
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-1">Azioni sui Dati</h3>
+                     <div class="flex flex-col sm:flex-row gap-2">
+                        <button id="clear-filter-btn" class="w-full bg-gray-200 text-gray-800 font-bold py-2 px-3 rounded-lg hover:bg-gray-300 text-sm">Reset</button>
+                        <button id="export-csv-btn" class="w-full bg-green-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-green-600 text-sm">Esporta CSV</button>
+                        <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-yellow-600 text-sm">Cancella Filtrati</button>
+                        <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-red-700 text-sm">Cancella Tutto</button>
+                    </div>
+                </div>
             </div>
         </div>
-
 
         <!-- Tabella Pronostici -->
         <div class="bg-white rounded-xl shadow-md overflow-hidden">
@@ -185,27 +207,12 @@
                     <thead class="bg-gray-100">
                         <tr>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                <div class="flex items-center">
-                                    Campionato
-                                    <select id="campionato-filter" class="ml-2 block w-full border-gray-300 rounded-md shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500"></select>
-                                </div>
-                            </th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
                             <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                <div class="flex items-center">
-                                    Mercato
-                                    <select id="mercato-filter" class="ml-2 block w-full border-gray-300 rounded-md shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500"></select>
-                                </div>
-                            </th>
-                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                <div class="flex items-center justify-center">
-                                    Esito
-                                    <select id="esito-filter" class="ml-2 block w-full border-gray-300 rounded-md shadow-sm text-xs focus:ring-indigo-500 focus:border-indigo-500"></select>
-                                </div>
-                            </th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
                             <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
                         </tr>
                     </thead>
@@ -244,7 +251,15 @@
         // --- Variabili Globali ---
         let userId = null;
         let allTips = [];
-        let currentFilters = { startDate: null, endDate: null, campionato: '', mercato: '', esito: '' };
+        let currentFilters = { 
+            startDate: null, 
+            endDate: null, 
+            campionati: [], 
+            mercati: [], 
+            esito: '',
+            minOdds: null,
+            maxOdds: null
+        };
         const TIPS_COLLECTION = 'pronostici-sportivi';
         const MESE = { "gen":1,"feb":2,"mar":3,"apr":4,"mag":5,"giu":6,"lug":7,"ago":8,"set":9,"ott":10,"nov":11,"dic":12 };
         const NAZIONI_MAP = {
@@ -276,13 +291,17 @@
         const editHtScore = document.getElementById('edit-ht-score');
         const startDateInput = document.getElementById('start-date');
         const endDateInput = document.getElementById('end-date');
+        const minOddsInput = document.getElementById('min-odds');
+        const maxOddsInput = document.getElementById('max-odds');
         const filterBtn = document.getElementById('filter-btn');
         const clearFilterBtn = document.getElementById('clear-filter-btn');
         const deleteFilteredBtn = document.getElementById('delete-filtered-btn');
         const deleteAllBtn = document.getElementById('delete-all-btn');
-        const campionatoFilter = document.getElementById('campionato-filter');
-        const mercatoFilter = document.getElementById('mercato-filter');
+        const campionatoMultiselect = document.getElementById('campionato-multiselect');
+        const mercatoMultiselect = document.getElementById('mercato-multiselect');
         const esitoFilter = document.getElementById('esito-filter');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        
         const totalPartiteEl = document.getElementById('total-partite');
         const partiteVinteEl = document.getElementById('partite-vinte');
         const partitePerseEl = document.getElementById('partite-perse');
@@ -403,11 +422,17 @@
             if (currentFilters.endDate) {
                 filteredTips = filteredTips.filter(tip => (tip.matchDate.seconds * 1000) <= currentFilters.endDate.getTime());
             }
-            if (currentFilters.campionato) {
-                filteredTips = filteredTips.filter(tip => tip.campionato === currentFilters.campionato);
+            if (currentFilters.minOdds !== null) {
+                 filteredTips = filteredTips.filter(tip => tip.odds && parseFloat(tip.odds) >= currentFilters.minOdds);
             }
-            if (currentFilters.mercato) {
-                filteredTips = filteredTips.filter(tip => tip.market === currentFilters.mercato);
+             if (currentFilters.maxOdds !== null) {
+                 filteredTips = filteredTips.filter(tip => tip.odds && parseFloat(tip.odds) <= currentFilters.maxOdds);
+            }
+            if (currentFilters.campionati.length > 0) {
+                filteredTips = filteredTips.filter(tip => currentFilters.campionati.includes(tip.campionato));
+            }
+            if (currentFilters.mercati.length > 0) {
+                filteredTips = filteredTips.filter(tip => currentFilters.mercati.includes(tip.market));
             }
             if (currentFilters.esito) {
                 filteredTips = filteredTips.filter(tip => {
@@ -465,12 +490,14 @@
                             </span>
                         </td>
                         <td class="table-cell text-center">
-                            <button class="edit-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${tip.id}" data-hometeam="${tip.homeTeam}" data-awayteam="${tip.awayTeam}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
+                             <div class="flex justify-center items-center gap-1">
+                                <button class="edit-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${tip.id}" data-hometeam="${tip.homeTeam}" data-awayteam="${tip.awayTeam}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <button class="delete-row-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${tip.id}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -478,14 +505,47 @@
             });
         }
         
+        function createMultiSelect(container, options, label) {
+            container.innerHTML = `
+                <button class="w-full text-left bg-white border border-gray-300 rounded-md shadow-sm px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">${label} (0)</button>
+                <div class="multiselect-dropdown hidden">
+                    ${options.map(opt => `
+                        <label>
+                            <input type="checkbox" value="${opt}" class="mr-2"> ${opt}
+                        </label>
+                    `).join('')}
+                </div>
+            `;
+            const button = container.querySelector('button');
+            const dropdown = container.querySelector('.multiselect-dropdown');
+            
+            button.addEventListener('click', () => {
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
+        }
+        
+        function getSelectedOptions(containerId) {
+            const container = document.getElementById(containerId);
+            return [...container.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+        }
+        
         function populateColumnFilters() {
             const campionati = [...new Set(allTips.map(tip => tip.campionato).filter(c => c))].sort();
             const mercati = [...new Set(allTips.map(tip => tip.market).filter(m => m))].sort();
             const esiti = ['Vinto', 'Perso', 'Attesa', 'N/D'];
 
+            createMultiSelect(campionatoMultiselect, campionati, 'Campionati');
+            createMultiSelect(mercatoMultiselect, mercati, 'Mercati');
+
             const populate = (select, options, valueMap = null) => {
                 const currentValue = select.value;
-                select.innerHTML = '<option value="">Tutti</option>';
+                select.innerHTML = '<option value="">Tutti gli Esiti</option>';
                 options.forEach(opt => {
                     const optionValue = valueMap ? valueMap[opt] : opt;
                     const selected = optionValue === currentValue ? 'selected' : '';
@@ -493,8 +553,6 @@
                 });
             };
             
-            populate(campionatoFilter, campionati);
-            populate(mercatoFilter, mercati);
             populate(esitoFilter, esiti, { 'Vinto': 'V', 'Perso': 'P', 'Attesa': 'Attesa', 'N/D': 'N/D' });
         }
         
@@ -749,7 +807,10 @@
                 if (isVittoriaTrasferta) return g1 < g2 ? "V" : "P";
                 if (isPareggio) return g1 === g2 ? "V" : "P";
 
-                if (cleanMarket.includes("1x2") && cleanMarket.includes("finale")) {
+                if (cleanMarket.includes("primo tempo")) {
+                    if (cleanMarket.includes("oltre 0.5")) return (ht1 + ht2) > 0.5 ? "V" : "P";
+                }
+                else if (cleanMarket.includes("1x2") && cleanMarket.includes("finale")) {
                     if (cleanMarket.includes(" 1")) return g1 > g2 ? "V" : "P";
                     if (cleanMarket.includes(" x")) return g1 === g2 ? "V" : "P";
                     if (cleanMarket.includes(" 2")) return g1 < g2 ? "V" : "P";
@@ -776,10 +837,6 @@
                     if (cleanMarket.includes("pari")) return (g1 + g2) % 2 === 0 ? "V" : "P";
                     if (cleanMarket.includes("dispari")) return (g1 + g2) % 2 !== 0 ? "V" : "P";
                 }
-                else if (cleanMarket.includes("primo tempo")) {
-                    if (cleanMarket.includes("oltre 0.5")) return (ht1 + ht2) > 0.5 ? "V" : "P";
-                }
-
             } catch (e) {
                 console.error("Errore in calcolaEsito:", e);
                 return "";
@@ -788,16 +845,23 @@
         }
         
         tipsTableBody.addEventListener('click', (event) => {
-            const editButton = event.target.closest('.edit-btn');
-            if (editButton) {
-                const docId = editButton.dataset.id;
-                const homeTeam = editButton.dataset.hometeam;
-                const awayTeam = editButton.dataset.awayteam;
+            const button = event.target.closest('button');
+            if (!button) return;
+
+            if (button.classList.contains('edit-btn')) {
+                const docId = button.dataset.id;
+                const homeTeam = button.dataset.hometeam;
+                const awayTeam = button.dataset.awayteam;
                 
                 editDocId.value = docId;
                 editModalMatchInfo.textContent = `${homeTeam} vs ${awayTeam}`;
                 editForm.reset();
                 editModal.classList.remove('hidden');
+            } else if (button.classList.contains('delete-row-btn')) {
+                const docId = button.dataset.id;
+                showModal('Conferma Cancellazione', 'Sei sicuro di voler cancellare questa partita?', 'error', async () => {
+                    await deleteDoc(doc(db, TIPS_COLLECTION, docId));
+                });
             }
         });
 
@@ -839,7 +903,7 @@
         });
 
         function applyAllFilters() {
-             const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
             if (startDate) startDate.setHours(0, 0, 0, 0); 
             
             const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
@@ -848,24 +912,35 @@
             currentFilters = {
                 startDate,
                 endDate,
-                campionato: campionatoFilter.value,
-                mercato: mercatoFilter.value,
-                esito: esitoFilter.value
+                campionati: getSelectedOptions('campionato-multiselect'),
+                mercati: getSelectedOptions('mercato-multiselect'),
+                esito: esitoFilter.value,
+                minOdds: minOddsInput.value ? parseFloat(minOddsInput.value) : null,
+                maxOdds: maxOddsInput.value ? parseFloat(maxOddsInput.value) : null,
             };
+            
+            // Aggiorna il testo del pulsante multiselect
+             document.querySelector('#campionato-multiselect button').textContent = `Campionati (${currentFilters.campionati.length})`;
+             document.querySelector('#mercato-multiselect button').textContent = `Mercati (${currentFilters.mercati.length})`;
+            
             applyFiltersAndRender();
         }
         
         filterBtn.addEventListener('click', applyAllFilters);
-        campionatoFilter.addEventListener('change', applyAllFilters);
-        mercatoFilter.addEventListener('change', applyAllFilters);
-        esitoFilter.addEventListener('change', applyAllFilters);
+        document.body.addEventListener('change', e => {
+             if (e.target.closest('.multiselect-dropdown') || e.target.id === 'esito-filter') {
+                 applyAllFilters();
+             }
+        });
 
         clearFilterBtn.addEventListener('click', () => {
             startDateInput.value = '';
             endDateInput.value = '';
-            campionatoFilter.value = '';
-            mercatoFilter.value = '';
+            minOddsInput.value = '';
+            maxOddsInput.value = '';
             esitoFilter.value = '';
+            
+            document.querySelectorAll('.multiselect-dropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
             applyAllFilters();
         });
         
@@ -876,22 +951,15 @@
                 'error',
                 async () => {
                     showLoader('Cancellazione di tutti i dati in corso...');
-                    const q = query(collection(db, TIPS_COLLECTION), where("userId", "==", userId));
-                    const snapshot = await getDocs(q);
+                    const snapshot = await getDocs(query(collection(db, TIPS_COLLECTION), where("userId", "==", userId)));
                     const docsToDelete = snapshot.docs;
                     const batchSize = 499;
-                    const numBatches = Math.ceil(docsToDelete.length / batchSize);
-
-                    for (let i = 0; i < numBatches; i++) {
-                        showLoader(`Cancellazione di tutti i dati in corso... (blocco ${i + 1} di ${numBatches})`);
+                    for (let i = 0; i < docsToDelete.length; i += batchSize) {
                         const batch = writeBatch(db);
-                        const chunk = docsToDelete.slice(i * batchSize, (i + 1) * batchSize);
-                        chunk.forEach(docRef => {
-                            batch.delete(docRef.ref);
-                        });
+                        const chunk = docsToDelete.slice(i, i + batchSize);
+                        chunk.forEach(docRef => batch.delete(docRef.ref));
                         await batch.commit();
                     }
-                    
                     hideLoader();
                     showModal('Operazione Completata', 'Tutti i dati sono stati cancellati con successo.');
                 }
@@ -899,12 +967,42 @@
         });
         
         deleteFilteredBtn.addEventListener('click', () => {
+             const filteredTipIds = document.getElementById('tips-table-body').querySelectorAll('tr');
+             const idsToDelete = Array.from(filteredTipIds).map(tr => tr.querySelector('.edit-btn')?.dataset.id).filter(id => id);
+
+            if (idsToDelete.length === 0) {
+                 showModal('Azione non possibile', 'Nessun dato corrisponde ai filtri attuali. Impossibile cancellare.', 'error');
+                return;
+            }
+
+            showModal(
+                'Conferma Cancellazione Filtrati', 
+                `Sei sicuro di voler cancellare i ${idsToDelete.length} pronostici visualizzati? L'azione è irreversibile.`, 
+                'error',
+                async () => {
+                    showLoader(`Cancellazione di ${idsToDelete.length} dati in corso...`);
+                    const batchSize = 499;
+                    for (let i = 0; i < idsToDelete.length; i += batchSize) {
+                        const batch = writeBatch(db);
+                        const chunk = idsToDelete.slice(i, i + batchSize);
+                        chunk.forEach(id => batch.delete(doc(db, TIPS_COLLECTION, id)));
+                        await batch.commit();
+                    }
+                    hideLoader();
+                    showModal('Operazione Completata', `${idsToDelete.length} dati sono stati cancellati.`);
+                }
+            );
+        });
+
+        exportCsvBtn.addEventListener('click', () => {
             const filteredTips = allTips.filter(tip => {
                  let pass = true;
                 if (currentFilters.startDate && (tip.matchDate.seconds * 1000) < currentFilters.startDate.getTime()) pass = false;
                 if (currentFilters.endDate && (tip.matchDate.seconds * 1000) > currentFilters.endDate.getTime()) pass = false;
-                if (currentFilters.campionato && tip.campionato !== currentFilters.campionato) pass = false;
-                if (currentFilters.mercato && tip.market !== currentFilters.mercato) pass = false;
+                if (currentFilters.minOdds !== null && (!tip.odds || parseFloat(tip.odds) < currentFilters.minOdds)) pass = false;
+                if (currentFilters.maxOdds !== null && (!tip.odds || parseFloat(tip.odds) > currentFilters.maxOdds)) pass = false;
+                if (currentFilters.campionati.length > 0 && !currentFilters.campionati.includes(tip.campionato)) pass = false;
+                if (currentFilters.mercati.length > 0 && !currentFilters.mercati.includes(tip.market)) pass = false;
                 if (currentFilters.esito) {
                     if (currentFilters.esito === 'V' && tip.outcome !== 'V') pass = false;
                     if (currentFilters.esito === 'P' && tip.outcome !== 'P') pass = false;
@@ -913,36 +1011,39 @@
                 }
                 return pass;
             });
-
+            
             if (filteredTips.length === 0) {
-                 showModal('Azione non possibile', 'Nessun dato corrisponde ai filtri attuali. Impossibile cancellare.', 'error');
+                showModal('Esportazione non possibile', 'Nessun dato da esportare per i filtri selezionati.', 'error');
                 return;
             }
 
-            showModal(
-                'Conferma Cancellazione Filtrati', 
-                `Sei sicuro di voler cancellare i ${filteredTips.length} pronostici visualizzati? L'azione è irreversibile.`, 
-                'error',
-                async () => {
-                    showLoader(`Cancellazione di ${filteredTips.length} dati in corso...`);
-                    const batchSize = 499;
-                    const numBatches = Math.ceil(filteredTips.length / batchSize);
+            let csvContent = "data:text/csv;charset=utf-8,";
+            const headers = ["Data", "Campionato", "Squadra Casa", "Squadra Trasferta", "Mercato", "Quota Media", "Risultato FT", "Risultato HT", "Esito"];
+            csvContent += headers.join(",") + "\r\n";
 
-                    for (let i = 0; i < numBatches; i++) {
-                        showLoader(`Cancellazione dei dati filtrati in corso... (blocco ${i + 1} di ${numBatches})`);
-                        const batch = writeBatch(db);
-                        const chunk = filteredTips.slice(i * batchSize, (i + 1) * batchSize);
-                        chunk.forEach(tip => {
-                            const docRef = doc(db, TIPS_COLLECTION, tip.id);
-                            batch.delete(docRef);
-                        });
-                        await batch.commit();
-                    }
+            filteredTips.forEach(tip => {
+                const esitoText = tip.outcome === 'V' ? 'Vinto' : (tip.outcome === 'P' ? 'Perso' : 'N/D');
+                const row = [
+                    new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT'),
+                    `"${tip.campionato || ''}"`,
+                    `"${tip.homeTeam || ''}"`,
+                    `"${tip.awayTeam || ''}"`,
+                    `"${tip.market || ''}"`,
+                    tip.odds || '',
+                    tip.resultFT || '',
+                    tip.resultHT || '',
+                    esitoText
+                ];
+                csvContent += row.join(",") + "\r\n";
+            });
 
-                    hideLoader();
-                    showModal('Operazione Completata', `${filteredTips.length} dati sono stati cancellati.`);
-                }
-            );
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "pronostici_filtrati.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
 
     </script>
