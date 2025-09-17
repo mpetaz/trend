@@ -129,7 +129,7 @@
         </div>
 
         <!-- Pannello di Controllo Unificato -->
-        <details class="bg-white rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-violet-200 transition-all">
+        <details class="bg-white rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-violet-200 transition-all" open>
             <summary class="text-2xl font-semibold cursor-pointer details-arrow">Pannello di Controllo e Filtri</summary>
             <div class="mt-6">
                  <!-- Caricamento e Aggiornamento -->
@@ -681,7 +681,6 @@
                 hideLoaderOnButton(ui.importBtn, 'Importa Dati');
                 showModal('Operazione Completata', `Importazione completata! ${importedCount} nuovi pronostici aggiunti. ${skippedCount} duplicati sono stati ignorati.`);
                 ui.fileUploader.value = '';
-                ui.showDashboardBtn.click();
             };
             reader.readAsArrayBuffer(file);
         });
@@ -740,7 +739,6 @@
 
             hideLoaderOnButton(ui.fetchResultsBtn, '✨ Aggiorna');
             showModal('Operazione Completata', `Aggiornamento terminato! ${updatedCount} risultati sono stati trovati e aggiornati.`);
-            ui.showDashboardBtn.click();
         });
 
         async function callGeminiAPI(userQuery, retries = 3) {
@@ -885,7 +883,7 @@
                 return;
             }
             
-            showLoader("Salvataggio in corso...");
+            showLoaderOnButton(ui.editModalSaveBtn);
             
             const tipRef = doc(db, TIPS_COLLECTION, docId);
             const tipDoc = await getDoc(tipRef);
@@ -900,7 +898,7 @@
                 status: 'completed'
             });
             
-            hideLoader();
+            hideLoaderOnButton(ui.editModalSaveBtn, 'Salva Modifiche');
             ui.editModal.classList.add('hidden');
         });
 
