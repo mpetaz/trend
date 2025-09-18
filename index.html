@@ -51,14 +51,6 @@
         details[open] .details-arrow summary:after {
             content: ' ▲';
         }
-        .tab-active {
-            border-color: #6d28d9;
-            color: #6d28d9;
-        }
-        .tab-inactive {
-            border-color: transparent;
-            color: #6b7280;
-        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -611,46 +603,22 @@
 
                 let importedCount = 0;
                 let skippedCount = 0;
+                let updatedCount = 0;
 
-                for (let i = 1; i < rows.length; i++) {
-                    const columns = rows[i];
-                    if (columns.length < 8) continue;
+                const headers = rows[0].map(h => String(h).trim());
+                const isBackupFile = headers.join(',') === "Data,Campionato,Partita,Mercato,Quota Media,Risultato FT,Risultato HT,Esito";
 
-                    try {
-                        const homeTeam = (columns[4] || '').replace('🆚', '').trim();
-                        const awayTeam = (columns[5] || '').trim();
-                        const matchDateStr = columns[6];
-                        let market = columns[7];
-                        const messaggioCompleto = columns[14] || '';
+                if(isBackupFile) {
+                    // Logica di aggiornamento da backup
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        const rowData = {};
+                        headers.forEach((h, index) => rowData[h] = row[index]);
 
-                        let campionato = '';
-                        const campionatoRegex = /🏆\s*(.+)/;
-                        const match = messaggioCompleto.match(campionatoRegex);
-                        if (match && match[1]) {
-                           const parts = match[1].split(',').map(s => s.trim());
-                           if (parts.length > 1) {
-                               const nazione = parts.pop();
-                               const siglaNazione = NAZIONI_MAP[nazione.toLowerCase()] || nazione.substring(0,3).toUpperCase();
-                               campionato = `${siglaNazione} - ${parts.join(', ')}`;
-                           } else {
-                               campionato = parts[0];
-                           }
-                        }
-                        
-                        let odds = 0;
-                        const oddsRegex = /:\s*(\d+\.\d+)/g;
-                        const oddsMatches = [...messaggioCompleto.matchAll(oddsRegex)];
-                        if (oddsMatches.length > 0) {
-                            const totalOdds = oddsMatches.reduce((sum, match) => sum + parseFloat(match[1]), 0);
-                            odds = totalOdds / oddsMatches.length;
-                        }
+                        const [homeTeam, awayTeam] = (rowData['Partita'] || '').split(' - ').map(s => s.trim());
+                        const matchDate = estraiDataOra(rowData['Data']);
 
-                        if (!homeTeam || !awayTeam || !matchDateStr || !market) continue;
-                        
-                        market = String(market).replace('🎯', '').replace('Mercato:', '').trim();
-
-                        const matchDate = estraiDataOra(matchDateStr);
-                        if (!matchDate) continue;
+                        if(!homeTeam || !awayTeam || !matchDate) continue;
 
                         const q = query(collection(db, TIPS_COLLECTION), 
                             where("userId", "==", userId),
@@ -658,37 +626,104 @@
                             where("awayTeam", "==", awayTeam),
                             where("matchDate", "==", matchDate)
                         );
-                        const existingDoc = await getDocs(q);
-                        if (!existingDoc.empty) {
-                            skippedCount++;
-                            continue; 
+                        const existingDocs = await getDocs(q);
+                        if (!existingDocs.empty) {
+                             const docToUpdate = existingDocs.docs[0];
+                             const ft = rowData['Risultato FT'];
+                             const ht = rowData['Risultato HT'];
+                             const outcome = rowData['Esito'] === 'Vinto' ? 'V' : (rowData['Esito'] === 'Perso' ? 'P' : '');
+                             await updateDoc(docToUpdate.ref, {
+                                 resultFT: ft || null,
+                                 resultHT: ht || null,
+                                 outcome: outcome || null,
+                                 status: 'completed'
+                             });
+                             updatedCount++;
                         }
-
-                        const newTip = {
-                            userId,
-                            homeTeam,
-                            awayTeam,
-                            matchDate,
-                            campionato,
-                            market,
-                            odds: odds > 0 ? odds.toFixed(2) : null,
-                            status: 'pending',
-                            resultFT: null,
-                            resultHT: null,
-                            outcome: null,
-                            sourceMessage: messaggioCompleto,
-                            createdAt: serverTimestamp()
-                        };
-                        
-                        await addDoc(collection(db, TIPS_COLLECTION), newTip);
-                        importedCount++;
-
-                    } catch (e) {
-                        console.error("Errore nell'elaborazione della riga:", columns, e);
                     }
+                     hideLoaderOnButton(ui.importBtn, 'Importa / Aggiorna');
+                     showModal('Operazione Completata', `Backup ripristinato! ${updatedCount} partite sono state aggiornate.`);
+                } else {
+                    // Logica di importazione originale
+                    for (let i = 1; i < rows.length; i++) {
+                        const columns = rows[i];
+                        if (columns.length < 8) continue;
+
+                        try {
+                            const homeTeam = (columns[4] || '').replace('🆚', '').trim();
+                            const awayTeam = (columns[5] || '').trim();
+                            const matchDateStr = columns[6];
+                            let market = columns[7];
+                            const messaggioCompleto = columns[14] || '';
+
+                            let campionato = '';
+                            const campionatoRegex = /🏆\s*(.+)/;
+                            const match = messaggioCompleto.match(campionatoRegex);
+                            if (match && match[1]) {
+                               const parts = match[1].split(',').map(s => s.trim());
+                               if (parts.length > 1) {
+                                   const nazione = parts.pop();
+                                   const siglaNazione = NAZIONI_MAP[nazione.toLowerCase()] || nazione.substring(0,3).toUpperCase();
+                                   campionato = `${siglaNazione} - ${parts.join(', ')}`;
+                               } else {
+                                   campionato = parts[0];
+                               }
+                            }
+                            
+                            let odds = 0;
+                            const oddsRegex = /:\s*(\d+\.\d+)/g;
+                            const oddsMatches = [...messaggioCompleto.matchAll(oddsRegex)];
+                            if (oddsMatches.length > 0) {
+                                const totalOdds = oddsMatches.reduce((sum, match) => sum + parseFloat(match[1]), 0);
+                                odds = totalOdds / oddsMatches.length;
+                            }
+
+                            if (!homeTeam || !awayTeam || !matchDateStr || !market) continue;
+                            
+                            market = String(market).replace('🎯', '').replace('Mercato:', '').trim();
+
+                            const matchDate = estraiDataOra(matchDateStr);
+                            if (!matchDate) continue;
+
+                            const q = query(collection(db, TIPS_COLLECTION), 
+                                where("userId", "==", userId),
+                                where("homeTeam", "==", homeTeam),
+                                where("awayTeam", "==", awayTeam),
+                                where("matchDate", "==", matchDate)
+                            );
+                            const existingDoc = await getDocs(q);
+                            if (!existingDoc.empty) {
+                                skippedCount++;
+                                continue; 
+                            }
+
+                            const newTip = {
+                                userId,
+                                homeTeam,
+                                awayTeam,
+                                matchDate,
+                                campionato,
+                                market,
+                                odds: odds > 0 ? odds.toFixed(2) : null,
+                                status: 'pending',
+                                resultFT: null,
+                                resultHT: null,
+                                outcome: null,
+                                sourceMessage: messaggioCompleto,
+                                createdAt: serverTimestamp()
+                            };
+                            
+                            await addDoc(collection(db, TIPS_COLLECTION), newTip);
+                            importedCount++;
+
+                        } catch (e) {
+                            console.error("Errore nell'elaborazione della riga:", columns, e);
+                        }
+                    }
+                    hideLoaderOnButton(ui.importBtn, 'Importa / Aggiorna');
+                    showModal('Operazione Completata', `Importazione completata! ${importedCount} nuovi pronostici aggiunti. ${skippedCount} duplicati sono stati ignorati.`);
                 }
-                hideLoaderOnButton(ui.importBtn, 'Importa Dati');
-                showModal('Operazione Completata', `Importazione completata! ${importedCount} nuovi pronostici aggiunti. ${skippedCount} duplicati sono stati ignorati.`);
+                
                 ui.fileUploader.value = '';
             };
             reader.readAsArrayBuffer(file);
