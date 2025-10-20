@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .win { background-color: #dcfce7; color: #166534; }
@@ -52,16 +51,6 @@
         details[open] .details-arrow summary:after {
             content: ' ▲';
         }
-        .tab-active {
-            border-color: #6d28d9;
-            color: #6d28d9;
-        }
-        .tab-inactive {
-            border-color: transparent;
-            color: #6b7280;
-        }
-        .page { display: none; }
-        .page.active { display: block; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -120,196 +109,118 @@
             <p class="text-lg text-gray-600 mt-2">La tua dashboard di analisi e gestione dei pronostici sportivi.</p>
         </header>
 
-        <!-- Navigazione a Schede -->
-        <div class="mb-8 flex justify-center border-b border-gray-200">
-            <button id="main-app-btn" class="px-6 py-3 text-lg font-medium border-b-2 tab-active">Trendo Principale</button>
-            <button id="secondo-tempo-btn" class="px-6 py-3 text-lg font-medium border-b-2 tab-inactive">Analisi Secondo Tempo</button>
-        </div>
-        
-        <!-- === VISTA PRINCIPALE === -->
-        <div id="main-app-view" class="page active">
-            <!-- Statistiche Rapide -->
-            <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                    <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
-                    <dd id="total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
-                </div>
-                <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                    <dt class="truncate text-sm font-medium text-gray-500">Vinte</dt>
-                    <dd id="partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
-                </div>
-                <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                    <dt class="truncate text-sm font-medium text-gray-500">Perse</dt>
-                    <dd id="partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
-                </div>
-                <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                    <dt class="truncate text-sm font-medium text-gray-500">% Vinte</dt>
-                    <dd id="percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
-                </div>
+        <!-- Statistiche Rapide -->
+        <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
+                <dd id="total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
             </div>
-
-            <!-- Pannello di Controllo Unificato -->
-            <details class="bg-white rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-violet-200 transition-all" open>
-                <summary class="text-2xl font-semibold cursor-pointer details-arrow">Pannello di Controllo e Filtri</summary>
-                <div class="mt-6">
-                    <!-- Caricamento e Aggiornamento -->
-                    <div class="border-b pb-6 mb-6">
-                        <h3 class="text-lg font-medium text-gray-800 mb-4">Gestione Database</h3>
-                        <div class="flex flex-col md:flex-row gap-6 items-center">
-                            <div class="flex-1 w-full">
-                                <label for="file-uploader" class="block text-sm font-medium text-gray-700 mb-1">Carica file pronostici o backup (.xlsx, .csv)</label>
-                                <input type="file" id="file-uploader" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
-                            </div>
-                            <button id="import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm disabled:bg-gray-400 flex items-center gap-2 justify-center" disabled>
-                                <span class="btn-text">Importa / Aggiorna</span>
-                                <div class="loader-sm hidden"></div>
-                            </button>
-                            <div class="border-t md:border-t-0 md:border-l border-gray-200 my-4 md:my-0 md:mx-4 h-auto md:h-12"></div>
-                            <div class="flex-1 w-full text-center md:text-left">
-                                <p class="text-sm font-medium text-gray-700">Aggiorna Risultati</p>
-                                <p class="text-xs text-gray-500">Cerca i risultati per le partite passate.</p>
-                            </div>
-                            <button id="fetch-results-btn" class="w-full md:w-auto bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm disabled:bg-gray-400 flex items-center gap-2 justify-center" disabled>
-                               <span class="btn-text">✨ Aggiorna</span>
-                               <div class="loader-sm hidden"></div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Filtri -->
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-800 mb-4 mt-6">Filtri di Ricerca</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                            <div>
-                                <label for="start-date" class="block text-sm font-medium text-gray-700">Periodo da</label>
-                                <input type="date" id="start-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                            </div>
-                            <div>
-                                 <label for="end-date" class="block text-sm font-medium text-gray-700">a</label>
-                                <input type="date" id="end-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                            </div>
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Quota (min/max)</label>
-                                <div class="flex gap-2 mt-1">
-                                    <input type="number" id="min-odds" placeholder="Min" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                                    <input type="number" id="max-odds" placeholder="Max" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                                </div>
-                             </div>
-                             <div class="flex gap-2">
-                                 <div id="campionato-multiselect" class="multiselect-container flex-1"></div>
-                                 <div id="mercato-multiselect" class="multiselect-container flex-1"></div>
-                                 <select id="esito-filter" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 h-10 mt-1"></select>
-                             </div>
-                        </div>
-                        <div class="mt-4 flex flex-col sm:flex-row gap-2">
-                            <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtri</button>
-                            <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Filtri</button>
-                            <button id="export-csv-btn" class="sm:ml-auto bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 text-sm">Esporta CSV</button>
-                        </div>
-                    </div>
-                </div>
-            </details>
-            
-            <!-- Zona Pericolo -->
-            <details class="bg-red-50 border border-red-200 rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-red-200 transition-all">
-                <summary class="text-xl font-semibold cursor-pointer details-arrow text-red-800">Zona Pericolo (Cancellazione Dati)</summary>
-                 <div class="mt-4 flex flex-col sm:flex-row gap-4">
-                    <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-sm">Cancella Solo Dati Visualizzati</button>
-                    <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm">Cancella Intero Database</button>
-                </div>
-                 <p class="text-xs text-red-600 mt-2">Attenzione: queste azioni sono irreversibili.</p>
-            </details>
-
-            <!-- Tabella Pronostici -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
-                                <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
-                                <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
-                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
-                                <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
-                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
-                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
-                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="8" class="text-center p-8 text-gray-500">Caricamento dati...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Vinte</dt>
+                <dd id="partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
+            </div>
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">Perse</dt>
+                <dd id="partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
+            </div>
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                <dt class="truncate text-sm font-medium text-gray-500">% Vinte</dt>
+                <dd id="percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
             </div>
         </div>
 
-        <!-- === VISTA ANALISI SECONDO TEMPO === -->
-        <div id="secondo-tempo-view" class="page">
-            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                 <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Analisi Over 0.5 Secondo Tempo</h2>
-                 <div class="flex flex-col md:flex-row gap-6 items-center">
-                     <div class="flex-1 w-full">
-                        <label for="st-file-uploader" class="block text-sm font-medium text-gray-700 mb-1">Carica file CSV "Totali Risultati"</label>
-                        <input type="file" id="st-file-uploader" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
+        <!-- Pannello di Controllo Unificato -->
+        <details class="bg-white rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-violet-200 transition-all" open>
+            <summary class="text-2xl font-semibold cursor-pointer details-arrow">Pannello di Controllo e Filtri</summary>
+            <div class="mt-6">
+                 <!-- Caricamento e Aggiornamento -->
+                 <div class="border-b pb-6 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Gestione Database</h3>
+                    <div class="flex flex-col md:flex-row gap-6 items-center">
+                        <div class="flex-1 w-full">
+                            <label for="file-uploader" class="block text-sm font-medium text-gray-700 mb-1">Carica file pronostici o backup (.xlsx, .csv)</label>
+                            <input type="file" id="file-uploader" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
+                        </div>
+                        <button id="import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm disabled:bg-gray-400 flex items-center gap-2 justify-center" disabled>
+                            <span class="btn-text">Importa / Aggiorna</span>
+                            <div class="loader-sm hidden"></div>
+                        </button>
+                        <div class="border-t md:border-t-0 md:border-l border-gray-200 my-4 md:my-0 md:mx-4 h-auto md:h-12"></div>
+                        <div class="flex-1 w-full text-center md:text-left">
+                            <p class="text-sm font-medium text-gray-700">Aggiorna Risultati</p>
+                            <p class="text-xs text-gray-500">Cerca i risultati per le partite passate.</p>
+                        </div>
+                        <button id="fetch-results-btn" class="w-full md:w-auto bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm disabled:bg-gray-400 flex items-center gap-2 justify-center" disabled>
+                           <span class="btn-text">✨ Aggiorna</span>
+                           <div class="loader-sm hidden"></div>
+                        </button>
                     </div>
-                    <button id="st-import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm flex items-center gap-2 justify-center">
-                        <span class="btn-text">Carica e Analizza 1T</span>
-                        <div class="loader-sm hidden"></div>
-                    </button>
                  </div>
-            </div>
 
-            <!-- Contenitore per i risultati dell'analisi ST -->
-            <div id="st-results-container" class="hidden">
-                 <!-- Statistiche Secondo Tempo -->
-                <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                        <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
-                        <dd id="st-total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
-                    </div>
-                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                        <dt class="truncate text-sm font-medium text-gray-500">Vinte (1T)</dt>
-                        <dd id="st-partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
-                    </div>
-                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                        <dt class="truncate text-sm font-medium text-gray-500">Perse (1T)</dt>
-                        <dd id="st-partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
-                    </div>
-                    <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                        <dt class="truncate text-sm font-medium text-gray-500">% Vinte (1T)</dt>
-                        <dd id="st-percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
-                    </div>
-                </div>
-                 <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                     <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                         <h2 class="text-2xl font-semibold">Risultati Analisi Secondo Tempo</h2>
+                 <!-- Filtri -->
+                 <div>
+                     <h3 class="text-lg font-medium text-gray-800 mb-4">Filtri di Ricerca</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700">Periodo da</label>
+                            <input type="date" id="start-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+                        <div>
+                             <label for="end-date" class="block text-sm font-medium text-gray-700">a</label>
+                            <input type="date" id="end-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700">Quota (min/max)</label>
+                            <div class="flex gap-2 mt-1">
+                                <input type="number" id="min-odds" placeholder="Min" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                                <input type="number" id="max-odds" placeholder="Max" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
+                            </div>
+                         </div>
                          <div class="flex gap-2">
-                             <button id="st-calculate-btn" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 text-sm flex items-center gap-2 justify-center">
-                                <span class="btn-text">Calcola Risultati 2T</span>
-                                <div class="loader-sm hidden"></div>
-                            </button>
-                            <button id="st-export-btn" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 text-sm" disabled>Esporta CSV</button>
+                             <div id="campionato-multiselect" class="multiselect-container flex-1"></div>
+                             <div id="mercato-multiselect" class="multiselect-container flex-1"></div>
+                             <select id="esito-filter" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 h-10 mt-1"></select>
                          </div>
                      </div>
+                     <div class="mt-4 flex flex-col sm:flex-row gap-2">
+                         <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtri</button>
+                         <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Filtri</button>
+                         <button id="export-csv-btn" class="sm:ml-auto bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 text-sm">Esporta CSV</button>
+                     </div>
                  </div>
-                <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
-                                    <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
-                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato FT</th>
-                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato HT</th>
-                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito 1T</th>
-                                    <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito 2T</th>
-                                </tr>
-                            </thead>
-                            <tbody id="st-table-body" class="bg-white divide-y divide-gray-200"></tbody>
-                        </table>
-                    </div>
-                </div>
+            </div>
+        </details>
+        
+        <!-- Zona Pericolo -->
+        <details class="bg-red-50 border border-red-200 rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-red-200 transition-all">
+            <summary class="text-xl font-semibold cursor-pointer details-arrow text-red-800">Zona Pericolo (Cancellazione Dati)</summary>
+             <div class="mt-4 flex flex-col sm:flex-row gap-4">
+                <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-sm">Cancella Solo Dati Visualizzati</button>
+                <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm">Cancella Intero Database</button>
+            </div>
+             <p class="text-xs text-red-600 mt-2">Attenzione: queste azioni sono irreversibili.</p>
+        </details>
+
+        <!-- Tabella Pronostici -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
+                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
+                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
+                        <tr><td colspan="8" class="text-center p-8 text-gray-500">Caricamento dati...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
         <p id="user-id-display" class="text-xs text-gray-400 mt-4 text-center"></p>
@@ -342,7 +253,6 @@
         // --- Variabili Globali ---
         let userId = null;
         let allTips = [];
-        let stAnalyzedData = [];
         let currentFilters = { 
             startDate: null, 
             endDate: null, 
@@ -397,37 +307,8 @@
             partiteVinteEl: document.getElementById('partite-vinte'),
             partitePerseEl: document.getElementById('partite-perse'),
             percentualeVinteEl: document.getElementById('percentuale-vinte'),
-            mainAppView: document.getElementById('main-app-view'),
-            secondoTempoView: document.getElementById('secondo-tempo-view'),
-            mainAppBtn: document.getElementById('main-app-btn'),
-            secondoTempoBtn: document.getElementById('secondo-tempo-btn'),
-            stFileUploader: document.getElementById('st-file-uploader'),
-            stImportBtn: document.getElementById('st-import-btn'),
-            stResultsContainer: document.getElementById('st-results-container'),
-            stTotalPartite: document.getElementById('st-total-partite'),
-            stPartiteVinte: document.getElementById('st-partite-vinte'),
-            stPartitePerse: document.getElementById('st-partite-perse'),
-            stPercentualeVinte: document.getElementById('st-percentuale-vinte'),
-            stTableBody: document.getElementById('st-table-body'),
-            stExportBtn: document.getElementById('st-export-btn'),
-            stCalculateBtn: document.getElementById('st-calculate-btn')
         };
         
-        // --- Navigazione a schede ---
-        ui.mainAppBtn.addEventListener('click', () => {
-            ui.mainAppView.classList.add('active');
-            ui.secondoTempoView.classList.remove('active');
-            ui.mainAppBtn.classList.replace('tab-inactive', 'tab-active');
-            ui.secondoTempoBtn.classList.replace('tab-active', 'tab-inactive');
-        });
-
-        ui.secondoTempoBtn.addEventListener('click', () => {
-            ui.secondoTempoView.classList.add('active');
-            ui.mainAppView.classList.remove('active');
-            ui.secondoTempoBtn.classList.replace('tab-inactive', 'tab-active');
-            ui.mainAppBtn.classList.replace('tab-active', 'tab-inactive');
-        });
-
         // --- Funzioni di Utility ---
         const showLoaderOnButton = (button) => {
             button.disabled = true;
@@ -531,7 +412,7 @@
             }
         });
         
-        // --- Logica Principale (Trendo) ---
+        // --- Logica Principale ---
         
         function listenToTips() {
             if (!userId) return;
@@ -1215,6 +1096,128 @@
             link.click();
             document.body.removeChild(link);
         });
+
+        // --- Logica Analisi Secondo Tempo ---
+        ui.stImportBtn.addEventListener('click', () => {
+            const file = ui.stFileUploader.files[0];
+            if (!file) {
+                showModal('Attenzione', "Per favore, seleziona un file CSV per l'analisi.");
+                return;
+            }
+            showLoaderOnButton(ui.stImportBtn);
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    stAnalyzedData = results.data.map(row => ({
+                        data: row['Data'],
+                        lega: row['Lega'],
+                        partita: row['Partita'],
+                        risultatoFT: row['Risultato'],
+                        esito1T: row['Esito (12)'],
+                        risultatoHT: null, // da trovare
+                        esito2T: 'PENDING' // da calcolare
+                    }));
+                    
+                    const totali = stAnalyzedData.length;
+                    const vinte = stAnalyzedData.filter(r => r.esito1T === 'VINTA').length;
+                    const perse = totali - vinte;
+                    const winrate = totali > 0 ? (vinte / totali) * 100 : 0;
+                    
+                    ui.stTotalPartite.textContent = totali;
+                    ui.stPartiteVinte.textContent = vinte;
+                    ui.stPartitePerse.textContent = perse;
+                    ui.stPercentualeVinte.textContent = `${winrate.toFixed(1)}%`;
+                    ui.stPercentualeVinte.className = `mt-1 text-3xl font-semibold tracking-tight ${winrate >= 80 ? 'text-green-600' : 'text-red-600'}`;
+
+                    renderStTable(stAnalyzedData);
+                    ui.stResultsContainer.classList.remove('hidden');
+                    hideLoaderOnButton(ui.stImportBtn, 'Carica e Analizza 1T');
+                    ui.stFileUploader.value = '';
+                }
+            });
+        });
+
+        ui.stCalculateBtn.addEventListener('click', async () => {
+            showLoaderOnButton(ui.stCalculateBtn);
+            ui.stExportBtn.disabled = true;
+
+            for(let i=0; i<stAnalyzedData.length; i++) {
+                const row = stAnalyzedData[i];
+                if (row.esito1T === 'VINTA') {
+                    const [home, away] = row.partita.split(' - ');
+                    const query = `Qual è stato il risultato del primo tempo (HT) della partita di calcio (${row.lega}) tra ${home} e ${away} giocata il ${new Date(row.data).toLocaleDateString('it-IT')}?`;
+                    try {
+                        const result = await callGeminiAPI(query);
+                        row.risultatoHT = result.ht_score || 'N/D';
+                        if (result.ht_score) {
+                           const [ht1, ht2] = result.ht_score.split('-').map(Number);
+                           const [ft1, ft2] = row.risultatoFT.split('-').map(Number);
+                           row.esito2T = ((ft1 - ht1) + (ft2 - ht2)) > 0 ? 'VINTA' : 'PERSA';
+                        } else {
+                           row.esito2T = 'PENDING';
+                        }
+                    } catch (e) {
+                         console.error("Errore Gemini per 2T:", e);
+                         row.esito2T = 'PENDING';
+                    }
+                } else { // esito1T === 'PERSA'
+                    row.risultatoHT = '0-0';
+                    row.esito2T = row.risultatoFT !== '0-0' ? 'VINTA' : 'PERSA';
+                }
+                renderStTable(stAnalyzedData); // Aggiorna la tabella riga per riga
+            }
+            hideLoaderOnButton(ui.stCalculateBtn, 'Calcola Risultati 2T');
+            ui.stExportBtn.disabled = false;
+            showModal('Analisi Completata', 'Il calcolo dei risultati del secondo tempo è terminato.');
+        });
+        
+         function renderStTable(data) {
+            ui.stTableBody.innerHTML = '';
+            data.forEach(m => {
+                let esito2TClass = 'bg-gray-200 text-gray-800';
+                if (m.esito2T === 'VINTA') esito2TClass = 'win';
+                if (m.esito2T === 'PERSA') esito2TClass = 'lose';
+
+                const esito1TClass = m.esito1T === 'VINTA' ? 'win' : 'lose';
+
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="table-cell text-sm text-gray-600">${new Date(m.data).toLocaleDateString('it-IT')}</td>
+                        <td class="table-cell font-medium text-gray-900">${m.partita}</td>
+                        <td class="table-cell text-center font-mono">${m.risultatoFT}</td>
+                        <td class="table-cell text-center font-mono">${m.risultatoHT || '...'}</td>
+                        <td class="table-cell text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${esito1TClass}">${m.esito1T}</span></td>
+                        <td class="table-cell text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${esito2TClass}">${m.esito2T}</span></td>
+                    </tr>
+                `;
+                ui.stTableBody.innerHTML += row;
+            });
+        }
+        
+         ui.stExportBtn.addEventListener('click', () => {
+            if (stAnalyzedData.length === 0) {
+                showModal('Esportazione non possibile', 'Nessun dato da esportare.', 'error');
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,";
+            const headers = Object.keys(stAnalyzedData[0]);
+            csvContent += headers.join(",") + "\r\n";
+
+            stAnalyzedData.forEach(row => {
+                const rowValues = headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`);
+                csvContent += rowValues.join(",") + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "analisi_secondo_tempo.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
 
     </script>
 </body>
