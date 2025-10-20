@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analisi Secondo Tempo (V10.2 - Parsing Streaming)</title>
+    <title>Analisi Secondo Tempo (V10.3 - UI/ID Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
@@ -70,7 +70,7 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-             <a href="./index.html" class="text-violet-600 hover:underline mb-4 block">&larr; Torna a Trendo Principale</a>
+             <a href="./index.html" class="text-violet-600 hover:underline mb-4 block">&larr; Ricarica Pagina</a>
             <h1 class="text-4xl font-bold text-gray-900">Analisi Secondo Tempo</h1>
             <p class="text-lg text-gray-600 mt-2">Analizza i risultati del secondo tempo partendo dai dati Over 0.5 HT.</p>
         </header>
@@ -162,7 +162,6 @@
             stTableBody: document.getElementById('st-table-body'),
             stExportBtn: document.getElementById('st-export-btn'),
             stCalculateBtn: document.getElementById('st-calculate-btn'),
-            // stClearDbBtn non serve più
             modal: document.getElementById('modal'),
             modalTitle: document.getElementById('modal-title'),
             modalBody: document.getElementById('modal-body'),
@@ -239,7 +238,7 @@
 
         // --- Logica Principale ---
         
-        // --- BLOCCO MODIFICATO: Parsing Streaming con `step` ---
+        // --- BLOCCO MODIFICATO: Parsing Streaming con `step` + UI Fix + ID Fix ---
         ui.stImportBtn.addEventListener('click', () => {
             const file = ui.stFileUploader.files[0];
             if (!file) {
@@ -249,14 +248,14 @@
             showLoaderOnButton(ui.stImportBtn);
             
             stAnalyzedData = []; // Resetta l'array ad ogni caricamento
-            let isFirstRow = true; // Per loggare le colonne solo una volta
+            let isFirstRow = true; 
+            let rowIndexCounter = 0; // Contatore per ID univoco
 
             console.log("Avvio parsing streaming...");
             
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
-                // --- NUOVA OPZIONE: STEP ---
                 step: function(results, parser) {
                     const row = results.data;
                     
@@ -266,26 +265,28 @@
                     }
 
                     // --- PULIZIA DATI RIGA PER RIGA ---
-                    // Sostituisce 0,5HT nel nome colonna (se presente) e nel valore
                     let esitoValue = row['Esito (0,5HT)'] || row['Esito (0.5HT)'] || 'N/D';
                     
-                    // Rimuove da qualsiasi campo se dovesse apparire
                     for (const key in row) {
                         if (typeof row[key] === 'string') {
                             row[key] = row[key].replace(/\\s?/g, '').trim();
                         }
                     }
+                    // --- CORREZIONE RISULTATO FT ---
+                    const risultatoFinale = row['Risultato'] || ''; 
 
                     if (row['Data'] && row['Partita']) {
-                        // Usa Data+Partita come ID base, aggiunge l'indice per unicità assoluta
-                        const uniqueId = `${row['Data']}-${row['Partita']}-${stAnalyzedData.length}`;
+                        // --- CORREZIONE ID UNIVOCO ---
+                        // Usiamo Data + Partita + Indice Progressivo
+                        const uniqueId = `${row['Data']}-${row['Partita']}-${rowIndexCounter}`;
+                        rowIndexCounter++; // Incrementa per la prossima riga
 
                         stAnalyzedData.push({
                             id: uniqueId,
                             data: row['Data'],
                             lega: row['Lega'],
                             partita: row['Partita'],
-                            risultatoFT: row['Risultato'] || '',
+                            risultatoFT: risultatoFinale, // Usa il valore corretto
                             esito1T: esitoValue, 
                             risultatoHT: null,
                             esito2T: 'PENDING'
@@ -294,7 +295,6 @@
                         console.warn("Riga saltata per dati mancanti:", row);
                     }
                 },
-                // --- FUNZIONE COMPLETE: Chiamata alla fine dello streaming ---
                 complete: function() {
                     console.log("Parsing streaming COMPLETATO.", stAnalyzedData.length, "righe processate.");
                     
@@ -310,13 +310,12 @@
                     hideLoaderOnButton(ui.stImportBtn, 'Carica e Analizza 1T');
                     ui.stFileUploader.value = '';
                 },
-                // --- FUNZIONE ERROR: Gestisce errori durante lo streaming ---
                 error: function(error, file) {
                     console.error("Errore PapaParse (streaming):", error);
                     showModal('Errore di Parsing', `Impossibile analizzare il file CSV: ${error.message}`, 'error');
                     hideLoaderOnButton(ui.stImportBtn, 'Carica e Analizza 1T');
                 },
-                encoding: "windows-1252" // Prova con questa codifica
+                encoding: "windows-1252" 
             });
         });
         // --- FINE BLOCCO MODIFICATO ---
@@ -329,48 +328,81 @@
             
             let googleCalls = 0;
             let rowsToUpdate = 0;
+            let rowsSkipped = 0; // Contatore per righe già calcolate
+
+            console.log("--- Inizio Calcolo Risultati 2T ---");
 
             for(let i=0; i<stAnalyzedData.length; i++) {
                 const row = stAnalyzedData[i];
                 let rowUpdated = false;
 
+                // Salta se non è PENDING
+                if (row.esito2T !== 'PENDING') {
+                    rowsSkipped++;
+                    // console.log(`Riga ${i+1} (${row.partita}) già calcolata (${row.esito2T}), skip.`);
+                    continue; 
+                }
+
+                console.log(`Processing riga ${i+1}: ${row.partita}, Esito1T: ${row.esito1T}, FT: ${row.risultatoFT}`);
+
                 // 1. LOGICA PERSA (0-0 HT)
-                if (row.esito1T === 'PERSA' && row.esito2T === 'PENDING') {
+                if (row.esito1T === 'PERSA') {
+                    console.log(`   -> Logica 0.5HT (PERSA). Imposto HT=0-0.`);
                     row.risultatoHT = '0-0';
-                    row.esito2T = (row.risultatoFT && row.risultatoFT !== '0-0') ? 'VINTA' : 'PERSA';
+                    // Controlla che FT sia valido prima di calcolare 2T
+                    if (row.risultatoFT && /^\d+-\d+$/.test(row.risultatoFT)) {
+                         row.esito2T = (row.risultatoFT !== '0-0') ? 'VINTA' : 'PERSA';
+                    } else {
+                         row.esito2T = 'N/D'; // FT non valido
+                         console.warn(`   -> FT non valido (${row.risultatoFT}), Esito2T impostato a N/D`);
+                    }
                     rowUpdated = true;
                 
                 // 2. LOGICA VINTA 1-0 / 0-1 (HT = FT)
-                } else if (row.esito1T === 'VINTA' && (row.risultatoFT === '1-0' || row.risultatoFT === '0-1') && row.esito2T === 'PENDING') {
+                } else if (row.esito1T === 'VINTA' && (row.risultatoFT === '1-0' || row.risultatoFT === '0-1')) {
+                    console.log(`   -> Logica 0.5HT (VINTA 1-0/0-1). Imposto HT = FT.`);
                     row.risultatoHT = row.risultatoFT;
                     row.esito2T = 'PERSA'; // Gol 2T = 0
                     rowUpdated = true;
 
                 // 3. LOGICA VINTA (ALTRI RISULTATI) -> Cerca su Google
-                } else if (row.esito1T === 'VINTA' && row.esito2T === 'PENDING') {
+                } else if (row.esito1T === 'VINTA') {
+                    console.log(`   -> Logica 0.5HT (VINTA >1 gol). Chiamo Google...`);
                     const [home, away] = row.partita.split(' - ');
                     const dataPartita = new Date(row.data).toLocaleDateString('it-IT');
                     const query = `risultato primo tempo ${home} ${away} ${dataPartita} ${row.lega}`;
                     googleCalls++;
+                    console.log(`      Query: ${query}`);
                     
                     try {
                         const result = await callGeminiAPI(query);
+                        console.log(`      Risposta Gemini:`, result);
                         row.risultatoHT = result.ht_score || 'N/D';
                         
-                        if (row.risultatoHT && /^\d+-\d+$/.test(row.risultatoHT) && row.risultatoFT && /^\d+-\d+$/.test(row.risultatoFT)) {
+                        if (row.risultatoHT && row.risultatoHT !== 'N/D' && /^\d+-\d+$/.test(row.risultatoHT) && 
+                            row.risultatoFT && /^\d+-\d+$/.test(row.risultatoFT)) {
                            const [ht1, ht2] = row.risultatoHT.split('-').map(Number);
                            const [ft1, ft2] = row.risultatoFT.split('-').map(Number);
                            const stGoals = (ft1 - ht1) + (ft2 - ht2);
                            row.esito2T = stGoals > 0 ? 'VINTA' : 'PERSA';
+                           console.log(`      HT:${row.risultatoHT}, FT:${row.risultatoFT} => Gol 2T:${stGoals}, Esito2T:${row.esito2T}`);
                         } else {
                            row.esito2T = 'N/D';
+                           console.warn(`      HT (${row.risultatoHT}) o FT (${row.risultatoFT}) non valido/trovato, Esito2T impostato a N/D`);
                         }
                     } catch (e) {
-                         console.error("Errore Gemini per 2T:", e);
+                         console.error(`      Errore Gemini per ${row.partita}:`, e);
                          row.esito2T = 'N/D';
                     }
                     rowUpdated = true;
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Pausa
+                    await new Promise(resolve => setTimeout(resolve, 600)); // Pausa leggermente aumentata
+                
+                // Caso imprevisto (es. Esito1T è N/D)
+                } else {
+                     console.warn(`   -> Caso non gestito per ${row.partita}. Esito1T: ${row.esito1T}. Imposto N/D.`);
+                     row.risultatoHT = 'N/D';
+                     row.esito2T = 'N/D';
+                     rowUpdated = true;
                 }
                 
                 if (rowUpdated) {
@@ -380,9 +412,10 @@
                 }
             }
             
+            console.log("--- Fine Calcolo Risultati 2T ---");
             hideLoaderOnButton(ui.stCalculateBtn, 'Calcola Risultati 2T');
             ui.stExportBtn.disabled = false;
-            showModal('Analisi Completata', `Calcolo terminato. ${rowsToUpdate} righe aggiornate. Sono state effettuate ${googleCalls} nuove ricerche.`);
+            showModal('Analisi Completata', `Calcolo terminato. ${rowsToUpdate} righe elaborate. ${rowsSkipped} righe già calcolate. Sono state effettuate ${googleCalls} nuove ricerche.`);
         });
         
          function renderStTable(data) {
@@ -427,11 +460,14 @@
                 showModal('Esportazione non possibile', 'Nessun dato da esportare.', 'error');
                 return;
             }
+            // Clona i dati e rimuove l'ID interno prima di esportare
+            const exportData = stAnalyzedData.map(({ id, ...rest }) => rest); 
+            
             let csvContent = "data:text/csv;charset=utf-8,";
-            const headers = Object.keys(stAnalyzedData[0]);
+            const headers = Object.keys(exportData[0]);
             csvContent += headers.join(",") + "\r\n";
 
-            stAnalyzedData.forEach(row => {
+            exportData.forEach(row => {
                 const rowValues = headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`);
                 csvContent += rowValues.join(",") + "\r\n";
             });
@@ -458,12 +494,12 @@
                  ui.editRowId.value = rowId;
                  ui.editModalMatchInfo.textContent = rowData.partita;
                  ui.editFtScore.value = rowData.risultatoFT || '';
-                 ui.editHtScore.value = rowData.risultatoHT || '';
+                 // Mostra N/D se null o vuoto
+                 ui.editHtScore.value = (rowData.risultatoHT && rowData.risultatoHT !== 'N/D') ? rowData.risultatoHT : ''; 
                  ui.editModal.classList.remove('hidden');
             } else if (button.classList.contains('delete-st-btn')) {
                 showModal('Conferma Cancellazione', `Sei sicuro di voler cancellare la partita: ${rowData.partita}?`, 'error', () => {
                     stAnalyzedData.splice(rowIndex, 1);
-                    // Non serve salvare nel DB
                     renderStTable(stAnalyzedData);
                     updateStats();
                 });
@@ -482,44 +518,46 @@
             ui.stPercentualeVinte.textContent = `${winrate.toFixed(1)}%`;
         }
 
-        ui.editModalSaveBtn.addEventListener('click', () => { // Rimosso async
+        ui.editModalSaveBtn.addEventListener('click', () => { 
             const rowId = ui.editRowId.value;
             const rowIndex = stAnalyzedData.findIndex(r => r.id === rowId);
             if (rowIndex === -1) return;
 
             const ftScore = ui.editFtScore.value.trim();
-            const htScore = ui.editHtScore.value.trim();
+            // Permetti HT vuoto, che verrà convertito in N/D
+            const htScoreInput = ui.editHtScore.value.trim(); 
+            const htScore = htScoreInput || 'N/D'; // Se vuoto, imposta N/D
 
-            if (!/^\d+-\d+$/.test(ftScore) || (htScore && !/^\d+-\d+$/.test(htScore))) {
-                 showModal('Errore', 'Formato risultato non valido. Usa il formato "X-Y" (es. 2-1).', 'error');
+            // Validazione: FT deve essere X-Y. HT può essere X-Y o N/D (vuoto)
+            if (!/^\d+-\d+$/.test(ftScore) || (htScoreInput && !/^\d+-\d+$/.test(htScoreInput))) {
+                 showModal('Errore', 'Formato risultato FT non valido (usa X-Y). HT può essere X-Y o vuoto.', 'error');
                 return;
             }
 
             const row = stAnalyzedData[rowIndex];
             row.risultatoFT = ftScore;
-            row.risultatoHT = htScore;
+            row.risultatoHT = htScore; // Salva N/D se era vuoto
 
             // Ricalcola Esito 2T
-            if (row.risultatoHT && row.risultatoFT) {
+            // Solo se HT e FT sono validi (non N/D e nel formato corretto)
+            if (row.risultatoHT && row.risultatoHT !== 'N/D' && /^\d+-\d+$/.test(row.risultatoHT) && 
+                row.risultatoFT && /^\d+-\d+$/.test(row.risultatoFT)) {
                const [ht1, ht2] = row.risultatoHT.split('-').map(Number);
                const [ft1, ft2] = row.risultatoFT.split('-').map(Number);
                const stGoals = (ft1 - ht1) + (ft2 - ht2);
                row.esito2T = stGoals > 0 ? 'VINTA' : 'PERSA';
             } else {
-                row.esito2T = 'N/D';
+                row.esito2T = 'N/D'; // Se HT o FT non sono validi, 2T è N/D
             }
             
-            // Non serve salvare nel DB
             renderStTable(stAnalyzedData);
             ui.editModal.classList.add('hidden');
         });
         
-        // Non serve più il listener per svuotare il DB
-        
         async function callGeminiAPI(userQuery, retries = 3) {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
-            const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere la chiave "ht_score". Se trovi il risultato del primo tempo (Half Time), valorizzalo come stringa (es. "1-0"). Se non lo trovi, il valore deve essere null. Esempio: {"ht_score": "1-0"}. Non aggiungere mai altro testo.`;
+            const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere la chiave "ht_score". Se trovi il risultato del primo tempo (Half Time), valorizzalo come stringa (es. "1-0"). Se non lo trovi o non sei sicuro, il valore deve essere null. Esempio: {"ht_score": "1-0"}. Non aggiungere mai altro testo.`;
             
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
@@ -541,27 +579,55 @@
                     }
 
                     if (!response.ok) {
+                         const errorBody = await response.text();
+                         console.error(`API Error Status: ${response.status}, Body: ${errorBody}`);
                         throw new Error(`API Error: ${response.statusText}`);
                     }
 
                     const result = await response.json();
+                    // Logga la risposta grezza di Gemini
+                    // console.log("Risposta API grezza:", JSON.stringify(result, null, 2)); 
+                    
                     const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
                     
-                    if (!text) return { ht_score: null };
+                    if (!text) {
+                        console.warn("Nessun testo trovato nella risposta API per:", userQuery);
+                        return { ht_score: null };
+                    }
                     
                     try {
                         const cleanText = text.replace(/```json\n?|\n?```/g, '');
-                        return JSON.parse(cleanText);
+                        // Aggiungo un try-catch più specifico per il JSON
+                        try {
+                            const parsedJson = JSON.parse(cleanText);
+                            // Controllo aggiuntivo: verifica che ht_score sia una stringa X-Y o null
+                            if (parsedJson.ht_score === null || /^\d+-\d+$/.test(parsedJson.ht_score)) {
+                                return parsedJson;
+                            } else {
+                                console.warn(`Formato ht_score non valido ('${parsedJson.ht_score}') nel JSON parsato per:`, userQuery);
+                                return { ht_score: null }; // Ritorna null se il formato non è corretto
+                            }
+                        } catch (jsonError) {
+                             console.error("Errore nel parsing del JSON:", cleanText, "Errore:", jsonError);
+                             return { ht_score: null };
+                        }
                     } catch (e) {
-                         console.error("Errore nel parsing del JSON:", text);
+                         // Questo catch esterno è meno probabile ora, ma lo tengo per sicurezza
+                         console.error("Errore generico nella pulizia/parsing del testo:", text, "Errore:", e);
                          return { ht_score: null };
                     }
                 } catch (error) {
-                    console.error(`Errore nel tentativo ${i + 1}:`, error);
-                    if (i === retries - 1) throw error;
+                    console.error(`Errore fetch nel tentativo ${i + 1} per ${userQuery}:`, error);
+                    if (i === retries - 1) {
+                         // Non rilanciare l'errore, ma ritorna null per permettere al ciclo di continuare
+                         return { ht_score: null }; 
+                    }
+                    await new Promise(resolve => setTimeout(resolve, (i + 1) * 1500)); // Pausa prima del retry
                 }
             }
-             throw new Error("Tutti i tentativi di chiamata API sono falliti.");
+             // Se tutti i tentativi falliscono, ritorna null
+             console.error("Tutti i tentativi API falliti per:", userQuery);
+             return { ht_score: null }; 
         }
 
     </script>
