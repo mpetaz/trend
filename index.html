@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trendo - Gestione Pronostici</title>
+    <title>Analisi Secondo Tempo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .win { background-color: #dcfce7; color: #166534; }
         .lose { background-color: #fee2e2; color: #991b1b; }
         .pending { background-color: #fef9c3; color: #854d0e; }
-        .fetching { background-color: #e0e7ff; color: #3730a3; }
         .table-cell { padding: 0.75rem; vertical-align: middle; }
         .loader-sm {
             border: 2px solid #f3f3f3;
-            border-top: 2px solid #fff;
+            border-top: 2px solid #4f46e5;
             border-radius: 50%;
             width: 16px;
             height: 16px;
@@ -26,55 +25,26 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .multiselect-container { position: relative; }
-        .multiselect-dropdown {
-            display: none;
-            position: absolute;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-height: 250px;
-            width: 20rem;
-            overflow-y: auto;
-            z-index: 10;
-        }
-        .multiselect-dropdown label {
-            display: block; padding: 0.5rem 1rem; cursor: pointer; white-space: nowrap;
-        }
-        .multiselect-dropdown label:hover { background-color: #f3f4f6; }
-        .details-arrow::-webkit-details-marker { display: none; }
-        .details-arrow summary:after {
-            content: ' ▼';
-            font-size: 0.8em;
-        }
-        details[open] .details-arrow summary:after {
-            content: ' ▲';
-        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
-    
+
     <!-- Modal Generico -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-lg shadow-xl text-left max-w-2xl w-full m-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-left max-w-lg w-full m-4">
             <div class="flex justify-between items-start">
                 <h3 id="modal-title" class="text-xl font-bold text-gray-800"></h3>
                 <button id="modal-close-btn-x" class="text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
             </div>
             <div id="modal-body" class="text-md text-gray-700 my-4"></div>
             <div class="flex justify-end gap-4 mt-6">
-                 <button id="modal-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-all duration-200 shadow-sm hidden">
-                    Annulla
-                </button>
-                 <button id="modal-confirm-btn" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm">
-                    OK
-                </button>
+                 <button id="modal-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 hidden">Annulla</button>
+                 <button id="modal-confirm-btn" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700">OK</button>
             </div>
         </div>
     </div>
     
-    <!-- Modal Modifica Risultato -->
+     <!-- Modal Modifica Risultato -->
     <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white p-6 rounded-lg shadow-xl text-left max-w-md w-full m-4">
             <div class="flex justify-between items-start">
@@ -83,21 +53,18 @@
             </div>
             <p id="edit-modal-match-info" class="text-md text-gray-600 mt-2 mb-4"></p>
             <form id="edit-form">
-                <input type="hidden" id="edit-doc-id">
+                <input type="hidden" id="edit-row-index">
                 <div class="mb-4">
                     <label for="edit-ft-score" class="block text-sm font-medium text-gray-700">Risultato Finale (FT)</label>
-                    <input type="text" id="edit-ft-score" placeholder="Es. 2-1" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm">
+                    <input type="text" id="edit-ft-score" placeholder="Es. 2-1" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div>
                     <label for="edit-ht-score" class="block text-sm font-medium text-gray-700">Risultato Primo Tempo (HT)</label>
-                    <input type="text" id="edit-ht-score" placeholder="Es. 1-0" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-violet-500 focus:border-violet-500 sm:text-sm">
+                    <input type="text" id="edit-ht-score" placeholder="Es. 1-0" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
                 </div>
             </form>
             <div class="text-right mt-6">
-                 <button id="edit-modal-save-btn" class="bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm flex items-center gap-2 justify-center">
-                    <span class="btn-text">Salva Modifiche</span>
-                    <div class="loader-sm hidden"></div>
-                </button>
+                 <button id="edit-modal-save-btn" class="bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600">Salva</button>
             </div>
         </div>
     </div>
@@ -105,178 +72,96 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">Trendo - Gestione Pronostici</h1>
-            <p class="text-lg text-gray-600 mt-2">La tua dashboard di analisi e gestione dei pronostici sportivi.</p>
+             <a href="./index.html" class="text-violet-600 hover:underline mb-4 block">&larr; Torna a Trendo Principale</a>
+            <h1 class="text-4xl font-bold text-gray-900">Analisi Secondo Tempo</h1>
+            <p class="text-lg text-gray-600 mt-2">Analizza i risultati del secondo tempo partendo dai dati Over 0.5 HT.</p>
         </header>
 
-        <!-- Statistiche Rapide -->
-        <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
-                <dd id="total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                <dt class="truncate text-sm font-medium text-gray-500">Vinte</dt>
-                <dd id="partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                <dt class="truncate text-sm font-medium text-gray-500">Perse</dt>
-                <dd id="partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
-            </div>
-            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                <dt class="truncate text-sm font-medium text-gray-500">% Vinte</dt>
-                <dd id="percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
-            </div>
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+             <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Caricamento Dati</h2>
+             <div class="flex flex-col md:flex-row gap-6 items-center">
+                 <div class="flex-1 w-full">
+                    <label for="st-file-uploader" class="block text-sm font-medium text-gray-700 mb-1">Carica il tuo file CSV "Totali Risultati"</label>
+                    <input type="file" id="st-file-uploader" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
+                </div>
+                <button id="st-import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 shadow-sm flex items-center gap-2 justify-center">
+                    <span class="btn-text">Carica e Analizza 1T</span>
+                    <div class="loader-sm hidden"></div>
+                </button>
+             </div>
         </div>
 
-        <!-- Pannello di Controllo Unificato -->
-        <details class="bg-white rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-violet-200 transition-all" open>
-            <summary class="text-2xl font-semibold cursor-pointer details-arrow">Pannello di Controllo e Filtri</summary>
-            <div class="mt-6">
-                 <!-- Caricamento e Aggiornamento -->
-                 <div class="border-b pb-6 mb-6">
-                    <h3 class="text-lg font-medium text-gray-800 mb-4">Gestione Database</h3>
-                    <div class="flex flex-col md:flex-row gap-6 items-center">
-                        <div class="flex-1 w-full">
-                            <label for="file-uploader" class="block text-sm font-medium text-gray-700 mb-1">Carica file pronostici o backup (.xlsx, .csv)</label>
-                            <input type="file" id="file-uploader" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 transition-colors duration-200">
-                        </div>
-                        <button id="import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 transition-all duration-200 shadow-sm disabled:bg-gray-400 flex items-center gap-2 justify-center" disabled>
-                            <span class="btn-text">Importa / Aggiorna</span>
+        <div id="st-results-container" class="hidden">
+            <div class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                    <dt class="truncate text-sm font-medium text-gray-500">Partite Analizzate</dt>
+                    <dd id="st-total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
+                </div>
+                <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                    <dt class="truncate text-sm font-medium text-gray-500">Vinte (1T)</dt>
+                    <dd id="st-partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
+                </div>
+                <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                    <dt class="truncate text-sm font-medium text-gray-500">Perse (1T)</dt>
+                    <dd id="st-partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
+                </div>
+                <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                    <dt class="truncate text-sm font-medium text-gray-500">% Vinte (1T)</dt>
+                    <dd id="st-percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
+                </div>
+            </div>
+             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                     <h2 class="text-2xl font-semibold">Risultati Analisi</h2>
+                     <div class="flex gap-2">
+                         <button id="st-calculate-btn" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 text-sm flex items-center gap-2 justify-center">
+                            <span class="btn-text">Calcola Risultati 2T</span>
                             <div class="loader-sm hidden"></div>
                         </button>
-                        <div class="border-t md:border-t-0 md:border-l border-gray-200 my-4 md:my-0 md:mx-4 h-auto md:h-12"></div>
-                        <div class="flex-1 w-full text-center md:text-left">
-                            <p class="text-sm font-medium text-gray-700">Aggiorna Risultati</p>
-                            <p class="text-xs text-gray-500">Cerca i risultati per le partite passate.</p>
-                        </div>
-                        <button id="fetch-results-btn" class="w-full md:w-auto bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600 transition-all duration-200 shadow-sm disabled:bg-gray-400 flex items-center gap-2 justify-center" disabled>
-                           <span class="btn-text">✨ Aggiorna</span>
-                           <div class="loader-sm hidden"></div>
-                        </button>
-                    </div>
-                 </div>
-
-                 <!-- Filtri -->
-                 <div>
-                     <h3 class="text-lg font-medium text-gray-800 mb-4">Filtri di Ricerca</h3>
-                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                        <div>
-                            <label for="start-date" class="block text-sm font-medium text-gray-700">Periodo da</label>
-                            <input type="date" id="start-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                        </div>
-                        <div>
-                             <label for="end-date" class="block text-sm font-medium text-gray-700">a</label>
-                            <input type="date" id="end-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                        </div>
-                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Quota (min/max)</label>
-                            <div class="flex gap-2 mt-1">
-                                <input type="number" id="min-odds" placeholder="Min" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                                <input type="number" id="max-odds" placeholder="Max" step="0.01" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-violet-500 focus:border-violet-500">
-                            </div>
-                         </div>
-                         <div class="flex gap-2">
-                             <div id="campionato-multiselect" class="multiselect-container flex-1"></div>
-                             <div id="mercato-multiselect" class="multiselect-container flex-1"></div>
-                             <select id="esito-filter" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 h-10 mt-1"></select>
-                         </div>
-                     </div>
-                     <div class="mt-4 flex flex-col sm:flex-row gap-2">
-                         <button id="filter-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm text-sm">Applica Filtri</button>
-                         <button id="clear-filter-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all duration-200 shadow-sm text-sm">Rimuovi Filtri</button>
-                         <button id="export-csv-btn" class="sm:ml-auto bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 text-sm">Esporta CSV</button>
+                        <button id="st-export-btn" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 text-sm">Esporta CSV</button>
                      </div>
                  </div>
-            </div>
-        </details>
-        
-        <!-- Zona Pericolo -->
-        <details class="bg-red-50 border border-red-200 rounded-xl shadow-md p-6 mb-8 open:ring-2 open:ring-red-200 transition-all">
-            <summary class="text-xl font-semibold cursor-pointer details-arrow text-red-800">Zona Pericolo (Cancellazione Dati)</summary>
-             <div class="mt-4 flex flex-col sm:flex-row gap-4">
-                <button id="delete-filtered-btn" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-sm">Cancella Solo Dati Visualizzati</button>
-                <button id="delete-all-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-sm">Cancella Intero Database</button>
-            </div>
-             <p class="text-xs text-red-600 mt-2">Attenzione: queste azioni sono irreversibili.</p>
-        </details>
-
-        <!-- Tabella Pronostici -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campionato</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Risultato</th>
-                            <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mercato</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quota Media</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito</th>
-                            <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tips-table-body" class="bg-white divide-y divide-gray-200">
-                        <tr><td colspan="8" class="text-center p-8 text-gray-500">Caricamento dati...</td></tr>
-                    </tbody>
-                </table>
+             </div>
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
+                                <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
+                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ris. FT</th>
+                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ris. HT</th>
+                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito 1T</th>
+                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito 2T</th>
+                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="st-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        <p id="user-id-display" class="text-xs text-gray-400 mt-4 text-center"></p>
     </div>
 
     <script type="module">
         // --- CONFIGURAZIONE CHIAVE API ---
         const API_KEY = "AIzaSyB9UHe0WirATu8KhHdH7dNdmcbhnaKKy6I";
-
-        // --- CONFIGURAZIONE FIREBASE ---
-        const firebaseConfig = {
-            apiKey: API_KEY,
-            authDomain: "trend-betmines.firebaseapp.com",
-            projectId: "trend-betmines",
-            storageBucket: "trend-betmines.firebasestorage.app",
-            messagingSenderId: "1075169451180",
-            appId: "1:1075169451180:web:57f32cc1fcade158ebd309"
-        };
-        
-        // --- Import delle librerie Firebase ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, updateDoc, doc, serverTimestamp, orderBy, deleteDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // --- Inizializzazione ---
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
         
         // --- Variabili Globali ---
-        let userId = null;
-        let allTips = [];
-        let currentFilters = { 
-            startDate: null, 
-            endDate: null, 
-            campionati: [], 
-            mercati: [], 
-            esito: '',
-            minOdds: null,
-            maxOdds: null
-        };
-        const TIPS_COLLECTION = 'pronostici-sportivi';
-        const MESE = { "gen":1,"feb":2,"mar":3,"apr":4,"mag":5,"giu":6,"lug":7,"ago":8,"set":9,"ott":10,"nov":11,"dic":12 };
-        const NAZIONI_MAP = {
-            "russia": "RUS", "mexico": "MEX", "netherlands": "NED", "spain": "SPA", "england": "ENG", 
-            "portugal": "POR", "turkey": "TUR", "colombia": "COL", "poland": "POL", "saudi arabia": "KSA",
-            "france": "FRA", "italy": "ITA", "germany": "GER", "brazil": "BRA", "argentina": "ARG"
-        };
+        let stAnalyzedData = [];
 
         // --- Elementi del DOM ---
         const ui = {
-            fileUploader: document.getElementById('file-uploader'),
-            importBtn: document.getElementById('import-btn'),
-            fetchResultsBtn: document.getElementById('fetch-results-btn'),
-            userIdDisplay: document.getElementById('user-id-display'),
-            tipsTableBody: document.getElementById('tips-table-body'),
+            stFileUploader: document.getElementById('st-file-uploader'),
+            stImportBtn: document.getElementById('st-import-btn'),
+            stResultsContainer: document.getElementById('st-results-container'),
+            stTotalPartite: document.getElementById('st-total-partite'),
+            stPartiteVinte: document.getElementById('st-partite-vinte'),
+            stPartitePerse: document.getElementById('st-partite-perse'),
+            stPercentualeVinte: document.getElementById('st-percentuale-vinte'),
+            stTableBody: document.getElementById('st-table-body'),
+            stExportBtn: document.getElementById('st-export-btn'),
+            stCalculateBtn: document.getElementById('st-calculate-btn'),
             modal: document.getElementById('modal'),
             modalTitle: document.getElementById('modal-title'),
             modalBody: document.getElementById('modal-body'),
@@ -288,39 +173,29 @@
             editModalCloseBtnX: document.getElementById('edit-modal-close-btn-x'),
             editModalSaveBtn: document.getElementById('edit-modal-save-btn'),
             editForm: document.getElementById('edit-form'),
-            editDocId: document.getElementById('edit-doc-id'),
+            editRowIndex: document.getElementById('edit-row-index'),
             editFtScore: document.getElementById('edit-ft-score'),
             editHtScore: document.getElementById('edit-ht-score'),
-            startDateInput: document.getElementById('start-date'),
-            endDateInput: document.getElementById('end-date'),
-            minOddsInput: document.getElementById('min-odds'),
-            maxOddsInput: document.getElementById('max-odds'),
-            filterBtn: document.getElementById('filter-btn'),
-            clearFilterBtn: document.getElementById('clear-filter-btn'),
-            deleteFilteredBtn: document.getElementById('delete-filtered-btn'),
-            deleteAllBtn: document.getElementById('delete-all-btn'),
-            campionatoMultiselect: document.getElementById('campionato-multiselect'),
-            mercatoMultiselect: document.getElementById('mercato-multiselect'),
-            esitoFilter: document.getElementById('esito-filter'),
-            exportCsvBtn: document.getElementById('export-csv-btn'),
-            totalPartiteEl: document.getElementById('total-partite'),
-            partiteVinteEl: document.getElementById('partite-vinte'),
-            partitePerseEl: document.getElementById('partite-perse'),
-            percentualeVinteEl: document.getElementById('percentuale-vinte'),
         };
         
         // --- Funzioni di Utility ---
         const showLoaderOnButton = (button) => {
             button.disabled = true;
-            button.querySelector('.btn-text').classList.add('hidden');
-            button.querySelector('.loader-sm').classList.remove('hidden');
+            const btnText = button.querySelector('.btn-text');
+            if (btnText) btnText.classList.add('hidden');
+            const loader = button.querySelector('.loader-sm');
+            if(loader) loader.classList.remove('hidden');
         };
         
         const hideLoaderOnButton = (button, originalText) => {
             button.disabled = false;
-            button.querySelector('.btn-text').textContent = originalText;
-            button.querySelector('.btn-text').classList.remove('hidden');
-            button.querySelector('.loader-sm').classList.add('hidden');
+            const btnText = button.querySelector('.btn-text');
+            if(btnText) {
+                btnText.textContent = originalText;
+                btnText.classList.remove('hidden');
+            }
+            const loader = button.querySelector('.loader-sm');
+            if(loader) loader.classList.add('hidden');
         };
         
         const showModal = (title, message, type = 'info', onConfirm = null) => {
@@ -353,750 +228,6 @@
         ui.modalCancelBtn.addEventListener('click', hideModal);
         ui.modalCloseBtnX.addEventListener('click', hideModal);
 
-        function estraiDataOra(txt) {
-            if (!txt || typeof txt !== 'string') return null;
-            
-            // Prova il formato "YYYY-MM-DD"
-            let date = new Date(txt);
-            if (!isNaN(date.getTime())) {
-                return date;
-            }
-
-            // Prova il formato "DD/MM/YYYY, HH:mm:ss"
-            const parts = txt.split(/[\s,:/]+/);
-            if(parts.length >= 5) {
-                date = new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
-                 if (!isNaN(date.getTime())) {
-                    return date;
-                }
-            }
-            
-            // Prova il formato originale
-            const dateRegex = /(\d{1,2})\s+([a-zà]+)\s+(\d{4})/;
-            const timeRegex = /(\d{1,2}:\d{2})/;
-            const dateMatch = txt.match(dateRegex);
-            const timeMatch = txt.match(timeRegex);
-
-            if (!dateMatch) return null;
-            
-            const g = parseInt(dateMatch[1]);
-            const meseStr = dateMatch[2].substring(0, 3).toLowerCase();
-            const anno = parseInt(dateMatch[3]);
-            const mese = MESE[meseStr];
-
-            if (!mese) return null;
-            
-            const [ore, minuti] = timeMatch ? timeMatch[1].split(':').map(Number) : [0, 0];
-            
-            date = new Date(anno, mese - 1, g, ore, minuti);
-            return date;
-        }
-
-        // --- Autenticazione ---
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                userId = user.uid;
-                ui.userIdDisplay.textContent = `UserID: ${userId}`;
-                ui.importBtn.disabled = false;
-                ui.fetchResultsBtn.disabled = false;
-                listenToTips();
-            } else {
-                signInAnonymously(auth).catch(error => {
-                    console.error("Errore di autenticazione anonima:", error);
-                    showModal(
-                        'Errore di Autenticazione', 
-                        `Impossibile connettersi a Firebase. L'app funzionerà correttamente solo dal sito ufficiale: <a href="https://mpetaz.github.io/trend/" target="_blank" class="text-blue-600 hover:underline">https://mpetaz.github.io/trend/</a> <br><br><p class="text-xs text-gray-500 mt-4">Dettagli: ${error.message}</p>`, 
-                        'error'
-                    );
-                });
-            }
-        });
-        
-        // --- Logica Principale ---
-        
-        function listenToTips() {
-            if (!userId) return;
-            const q = query(collection(db, TIPS_COLLECTION), where("userId", "==", userId));
-            
-            onSnapshot(q, (querySnapshot) => {
-                allTips = [];
-                querySnapshot.forEach((doc) => {
-                    allTips.push({ id: doc.id, ...doc.data() });
-                });
-                populateColumnFilters();
-                applyFiltersAndRender();
-            }, (error) => {
-                console.error("Errore nell'ascolto dei dati:", error);
-                if (error.message.includes("requires an index")) {
-                     const link = `https://console.firebase.google.com/v1/r/project/trend-betmines/firestore/indexes?create_composite=Clpwcm9qZWN0cy90cmVuZC1iZXRtaW5lcy9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvcHJvbm9zdGljaS1zcG9ydGl2aS9pbmRleGVzL18QARoKCgZ1c2VySWQQARoOCgpob21lVGVhbRABGg0KCWF3YXlUZWFtEAESGg0KCW1hdGNoRGF0ZRABGgwKCF9fbmFtZV9fEAE`;
-                     showModal('Configurazione Richiesta', `Per evitare duplicati, Firebase ha bisogno di un nuovo indice. <a href="${link}" target="_blank" class="text-blue-600 hover:underline font-bold">Clicca qui</a>, attendi che la pagina carichi, e clicca su "Crea".`, 'error');
-                } else {
-                    showModal('Errore Database', `Impossibile caricare i dati da Firestore: ${error.message}`, 'error');
-                }
-            });
-        }
-        
-        function applyFiltersAndRender() {
-            let filteredTips = [...allTips];
-            
-            if (currentFilters.startDate) {
-                filteredTips = filteredTips.filter(tip => (tip.matchDate.seconds * 1000) >= currentFilters.startDate.getTime());
-            }
-            if (currentFilters.endDate) {
-                filteredTips = filteredTips.filter(tip => (tip.matchDate.seconds * 1000) <= currentFilters.endDate.getTime());
-            }
-            if (currentFilters.minOdds !== null) {
-                 filteredTips = filteredTips.filter(tip => tip.odds && parseFloat(tip.odds) >= currentFilters.minOdds);
-            }
-             if (currentFilters.maxOdds !== null) {
-                 filteredTips = filteredTips.filter(tip => tip.odds && parseFloat(tip.odds) <= currentFilters.maxOdds);
-            }
-            if (currentFilters.campionati.length > 0) {
-                filteredTips = filteredTips.filter(tip => currentFilters.campionati.includes(tip.campionato));
-            }
-            if (currentFilters.mercati.length > 0) {
-                filteredTips = filteredTips.filter(tip => currentFilters.mercati.includes(tip.market));
-            }
-            if (currentFilters.esito) {
-                filteredTips = filteredTips.filter(tip => {
-                    if (currentFilters.esito === 'V') return tip.outcome === 'V';
-                    if (currentFilters.esito === 'P') return tip.outcome === 'P';
-                    if (currentFilters.esito === 'N/D') return tip.status === 'completed' && !tip.outcome;
-                    if (currentFilters.esito === 'Attesa') return tip.status === 'pending' || tip.status === 'fetching';
-                    return false;
-                });
-            }
-            
-            filteredTips.sort((a, b) => (b.matchDate?.seconds || 0) - (a.matchDate?.seconds || 0));
-            renderTable(filteredTips);
-            updateStatsBox(filteredTips);
-        }
-
-        function renderTable(tips) {
-            ui.tipsTableBody.innerHTML = '';
-            if (tips.length === 0) {
-                ui.tipsTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500">Nessun dato corrisponde ai filtri selezionati.</td></tr>';
-                return;
-            }
-
-            tips.forEach(tip => {
-                let esitoClass = 'pending';
-                let esitoText = 'Attesa';
-                if (tip.status === 'fetching') {
-                    esitoClass = 'fetching';
-                    esitoText = 'Cerca...';
-                } else if (tip.outcome === 'V') {
-                    esitoClass = 'win';
-                    esitoText = 'Vinto';
-                } else if (tip.outcome === 'P') {
-                    esitoClass = 'lose';
-                    esitoText = 'Perso';
-                } else if (tip.status === 'completed' && !tip.outcome) {
-                     esitoClass = 'pending';
-                     esitoText = 'N/D';
-                }
-
-                const row = `
-                    <tr class="hover:bg-gray-50 transition-colors duration-150">
-                        <td class="table-cell text-sm text-gray-600">${tip.matchDate && tip.matchDate.seconds ? new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Data non valida'}</td>
-                        <td class="table-cell text-sm text-gray-500">${tip.campionato || ''}</td>
-                        <td class="table-cell font-medium text-gray-900">${tip.homeTeam || ''} - ${tip.awayTeam || ''}</td>
-                        <td class="table-cell text-center font-mono text-gray-700">
-                            <div>FT: ${tip.resultFT || '-'}</div>
-                            <div class="text-xs">HT: ${tip.resultHT || '-'}</div>
-                        </td>
-                        <td class="table-cell text-sm text-gray-600">${tip.market ? String(tip.market) : ''}</td>
-                        <td class="table-cell text-center font-semibold text-gray-700">${tip.odds || '-'}</td>
-                        <td class="table-cell text-center">
-                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${esitoClass}">
-                                ${esitoText}
-                            </span>
-                        </td>
-                        <td class="table-cell text-center">
-                             <div class="flex justify-center items-center gap-1">
-                                <button class="edit-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${tip.id}" data-hometeam="${tip.homeTeam}" data-awayteam="${tip.awayTeam}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                                </button>
-                                <button class="delete-row-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${tip.id}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                ui.tipsTableBody.innerHTML += row;
-            });
-        }
-        
-        function createMultiSelect(container, options, label) {
-            container.innerHTML = `
-                <button class="w-full text-left bg-white border border-gray-300 rounded-md shadow-sm px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">${label} (0)</button>
-                <div class="multiselect-dropdown hidden">
-                    ${options.map(opt => `
-                        <label>
-                            <input type="checkbox" value="${opt}" class="mr-2"> ${opt}
-                        </label>
-                    `).join('')}
-                </div>
-            `;
-            const button = container.querySelector('button');
-            const dropdown = container.querySelector('.multiselect-dropdown');
-            
-            button.addEventListener('click', () => {
-                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!container.contains(e.target)) {
-                    dropdown.style.display = 'none';
-                }
-            });
-        }
-        
-        function getSelectedOptions(containerId) {
-            const container = document.getElementById(containerId);
-            return [...container.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
-        }
-        
-        function populateColumnFilters() {
-            const campionati = [...new Set(allTips.map(tip => tip.campionato).filter(c => c))].sort();
-            const mercati = [...new Set(allTips.map(tip => tip.market).filter(m => m))].sort();
-            const esiti = ['Vinto', 'Perso', 'Attesa', 'N/D'];
-
-            createMultiSelect(ui.campionatoMultiselect, campionati, 'Campionati');
-            createMultiSelect(ui.mercatoMultiselect, mercati, 'Mercati');
-
-            const populate = (select, options, valueMap = null) => {
-                const currentValue = select.value;
-                select.innerHTML = '<option value="">Tutti gli Esiti</option>';
-                options.forEach(opt => {
-                    const optionValue = valueMap ? valueMap[opt] : opt;
-                    const selected = optionValue === currentValue ? 'selected' : '';
-                    select.innerHTML += `<option value="${optionValue}" ${selected}>${opt}</option>`;
-                });
-            };
-            
-            populate(ui.esitoFilter, esiti, { 'Vinto': 'V', 'Perso': 'P', 'Attesa': 'Attesa', 'N/D': 'N/D' });
-        }
-        
-        function updateStatsBox(tips) {
-            const partiteConcluse = tips.filter(tip => tip.outcome === 'V' || tip.outcome === 'P');
-            const vinte = partiteConcluse.filter(tip => tip.outcome === 'V').length;
-            const perse = partiteConcluse.filter(tip => tip.outcome === 'P').length;
-            const totali = vinte + perse;
-            const percentuale = totali > 0 ? (vinte / totali) * 100 : 0;
-
-            ui.totalPartiteEl.textContent = totali;
-            ui.partiteVinteEl.textContent = vinte;
-            ui.partitePerseEl.textContent = perse;
-            ui.percentualeVinteEl.textContent = `${percentuale.toFixed(1)}%`;
-
-            ui.percentualeVinteEl.classList.remove('text-green-600', 'text-red-600', 'text-gray-900');
-            if (percentuale >= 50) {
-                ui.percentualeVinteEl.classList.add('text-green-600');
-            } else if (totali > 0) {
-                 ui.percentualeVinteEl.classList.add('text-red-600');
-            } else {
-                ui.percentualeVinteEl.classList.add('text-gray-900');
-            }
-        }
-
-        ui.importBtn.addEventListener('click', async () => {
-            const file = ui.fileUploader.files[0];
-            if (!file) {
-                showModal('Attenzione', "Per favore, seleziona un file.");
-                return;
-            }
-
-            showLoaderOnButton(ui.importBtn);
-
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const data = event.target.result;
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                let importedCount = 0;
-                let skippedCount = 0;
-                let updatedCount = 0;
-
-                const headers = rows[0].map(h => String(h).trim());
-                const isBackupFile = headers.join(',') === "Data,Campionato,Partita,Mercato,Quota Media,Risultato FT,Risultato HT,Esito";
-
-                if(isBackupFile) {
-                    // Logica di aggiornamento da backup
-                    for (let i = 1; i < rows.length; i++) {
-                        const row = rows[i];
-                        const rowData = {};
-                        headers.forEach((h, index) => rowData[h] = row[index]);
-
-                        const [homeTeam, awayTeam] = (rowData['Partita'] || '').split(' - ').map(s => s.trim());
-                        const matchDate = estraiDataOra(rowData['Data']);
-
-                        if(!homeTeam || !awayTeam || !matchDate) continue;
-
-                        const q = query(collection(db, TIPS_COLLECTION), 
-                            where("userId", "==", userId),
-                            where("homeTeam", "==", homeTeam),
-                            where("awayTeam", "==", awayTeam),
-                            where("matchDate", "==", matchDate)
-                        );
-                        const existingDocs = await getDocs(q);
-                        if (!existingDocs.empty) {
-                             const docToUpdate = existingDocs.docs[0];
-                             const ft = rowData['Risultato FT'];
-                             const ht = rowData['Risultato HT'];
-                             const outcome = rowData['Esito'] === 'Vinto' ? 'V' : (rowData['Esito'] === 'Perso' ? 'P' : '');
-                             await updateDoc(docToUpdate.ref, {
-                                 resultFT: ft || null,
-                                 resultHT: ht || null,
-                                 outcome: outcome || null,
-                                 status: 'completed'
-                             });
-                             updatedCount++;
-                        }
-                    }
-                     hideLoaderOnButton(ui.importBtn, 'Importa / Aggiorna');
-                     showModal('Operazione Completata', `Backup ripristinato! ${updatedCount} partite sono state aggiornate.`);
-                } else {
-                    // Logica di importazione originale
-                    for (let i = 1; i < rows.length; i++) {
-                        const columns = rows[i];
-                        if (columns.length < 8) continue;
-
-                        try {
-                            const homeTeam = (columns[4] || '').replace('🆚', '').trim();
-                            const awayTeam = (columns[5] || '').trim();
-                            const matchDateStr = columns[6];
-                            let market = columns[7];
-                            const messaggioCompleto = columns[14] || '';
-
-                            let campionato = '';
-                            const campionatoRegex = /🏆\s*(.+)/;
-                            const match = messaggioCompleto.match(campionatoRegex);
-                            if (match && match[1]) {
-                               const parts = match[1].split(',').map(s => s.trim());
-                               if (parts.length > 1) {
-                                   const nazione = parts.pop();
-                                   const siglaNazione = NAZIONI_MAP[nazione.toLowerCase()] || nazione.substring(0,3).toUpperCase();
-                                   campionato = `${siglaNazione} - ${parts.join(', ')}`;
-                               } else {
-                                   campionato = parts[0];
-                               }
-                            }
-                            
-                            let odds = 0;
-                            const oddsRegex = /:\s*(\d+\.\d+)/g;
-                            const oddsMatches = [...messaggioCompleto.matchAll(oddsRegex)];
-                            if (oddsMatches.length > 0) {
-                                const totalOdds = oddsMatches.reduce((sum, match) => sum + parseFloat(match[1]), 0);
-                                odds = totalOdds / oddsMatches.length;
-                            }
-
-                            if (!homeTeam || !awayTeam || !matchDateStr || !market) continue;
-                            
-                            market = String(market).replace('🎯', '').replace('Mercato:', '').trim();
-
-                            const matchDate = estraiDataOra(matchDateStr);
-                            if (!matchDate) continue;
-
-                            const q = query(collection(db, TIPS_COLLECTION), 
-                                where("userId", "==", userId),
-                                where("homeTeam", "==", homeTeam),
-                                where("awayTeam", "==", awayTeam),
-                                where("matchDate", "==", matchDate)
-                            );
-                            const existingDoc = await getDocs(q);
-                            if (!existingDoc.empty) {
-                                skippedCount++;
-                                continue; 
-                            }
-
-                            const newTip = {
-                                userId,
-                                homeTeam,
-                                awayTeam,
-                                matchDate,
-                                campionato,
-                                market,
-                                odds: odds > 0 ? odds.toFixed(2) : null,
-                                status: 'pending',
-                                resultFT: null,
-                                resultHT: null,
-                                outcome: null,
-                                sourceMessage: messaggioCompleto,
-                                createdAt: serverTimestamp()
-                            };
-                            
-                            await addDoc(collection(db, TIPS_COLLECTION), newTip);
-                            importedCount++;
-
-                        } catch (e) {
-                            console.error("Errore nell'elaborazione della riga:", columns, e);
-                        }
-                    }
-                    hideLoaderOnButton(ui.importBtn, 'Importa / Aggiorna');
-                    showModal('Operazione Completata', `Importazione completata! ${importedCount} nuovi pronostici aggiunti. ${skippedCount} duplicati sono stati ignorati.`);
-                }
-                
-                ui.fileUploader.value = '';
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        ui.fetchResultsBtn.addEventListener('click', async () => {
-            if (!userId) return;
-
-            showLoaderOnButton(ui.fetchResultsBtn);
-
-            const now = new Date();
-            const q = query(collection(db, TIPS_COLLECTION), 
-                where("userId", "==", userId), 
-                where("status", "==", "pending"),
-                where("matchDate", "<", now)
-            );
-
-            const querySnapshot = await getDocs(q);
-            const pendingTips = [];
-            querySnapshot.forEach(doc => pendingTips.push({ id: doc.id, ...doc.data() }));
-
-            if (pendingTips.length === 0) {
-                showModal("Nessun Aggiornamento", "Non ci sono partite passate in attesa di risultato.");
-                hideLoaderOnButton(ui.fetchResultsBtn, '✨ Aggiorna');
-                return;
-            }
-            
-            let updatedCount = 0;
-            for (const tip of pendingTips) {
-                await updateDoc(doc(db, TIPS_COLLECTION, tip.id), { status: 'fetching' });
-
-                const dateString = new Date(tip.matchDate.seconds * 1000).toLocaleDateString('it-IT');
-                const userQuery = `Qual è stato il risultato finale (FT) e del primo tempo (HT) della partita di calcio (${tip.campionato || 'campionato non specificato'}) tra ${tip.homeTeam} e ${tip.awayTeam} giocata il ${dateString}?`;
-                
-                try {
-                    const result = await callGeminiAPI(userQuery);
-                    
-                    const { ft_score, ht_score } = result;
-
-                    if (ft_score) {
-                        const outcome = calcolaEsito(ht_score, ft_score, tip.market);
-                        await updateDoc(doc(db, TIPS_COLLECTION, tip.id), {
-                            resultFT: ft_score,
-                            resultHT: ht_score,
-                            outcome: outcome,
-                            status: 'completed'
-                        });
-                        updatedCount++;
-                    } else {
-                         await updateDoc(doc(db, TIPS_COLLECTION, tip.id), { status: 'completed' });
-                    }
-                } catch (error) {
-                    console.error("Errore API per la partita:", tip.homeTeam, error);
-                    await updateDoc(doc(db, TIPS_COLLECTION, tip.id), { status: 'pending' });
-                }
-            }
-
-            hideLoaderOnButton(ui.fetchResultsBtn, '✨ Aggiorna');
-            showModal('Operazione Completata', `Aggiornamento terminato! ${updatedCount} risultati sono stati trovati e aggiornati.`);
-        });
-
-        async function callGeminiAPI(userQuery, retries = 3) {
-            const apiKey = API_KEY;
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-            const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere le chiavi "ft_score" e "ht_score". Se trovi entrambi i risultati, valorizzali come stringhe (es. "2-1"). Se non trovi un risultato, il suo valore deve essere null. Esempio di risposta corretta: {"ft_score": "3-0", "ht_score": "1-0"}. Esempio se non trovi il risultato: {"ft_score": null, "ht_score": null}. Non aggiungere mai altro testo o spiegazioni.`;
-            
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                tools: [{ "google_search": {} }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-            };
-            
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.status === 503 && i < retries - 1) {
-                        console.warn(`Tentativo ${i + 1} fallito (503). Riprovo tra ${ (i + 1) * 2 } secondi...`);
-                        await new Promise(resolve => setTimeout(resolve, (i + 1) * 2000));
-                        continue;
-                    }
-
-                    if (!response.ok) {
-                        throw new Error(`API Error: ${response.statusText}`);
-                    }
-
-                    const result = await response.json();
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    
-                    if (!text) return { ft_score: null, ht_score: null };
-                    
-                    try {
-                        const cleanText = text.replace(/```json\n?|\n?```/g, '');
-                        return JSON.parse(cleanText);
-                    } catch (e) {
-                         console.error("Errore nel parsing del JSON:", text);
-                         return { ft_score: null, ht_score: null };
-                    }
-                } catch (error) {
-                    console.error(`Errore nel tentativo ${i + 1}:`, error);
-                    if (i === retries - 1) throw error;
-                }
-            }
-             throw new Error("Tutti i tentativi di chiamata API sono falliti.");
-        }
-
-        function calcolaEsito(risHT, risFT, mercato) {
-            if (!risFT || !mercato) return "";
-            
-            let cleanMarket = String(mercato).toLowerCase().trim();
-
-            if (cleanMarket.includes("primo tempo")) {
-                if(!risHT) return ""; // Se il risultato HT non c'è, non calcolare l'esito
-                const [ht1, ht2] = (risHT).split("-").map(Number);
-                if (cleanMarket.includes("oltre 0.5")) return (ht1 + ht2) > 0.5 ? "V" : "P";
-            }
-
-            try {
-                const [g1, g2] = risFT.split("-").map(Number);
-
-                const isVittoriaCasa = cleanMarket === '1' || cleanMarket.includes('vittoria in casa');
-                const isVittoriaTrasferta = cleanMarket === '2' || cleanMarket.includes('vittoria in trasferta') || cleanMarket.includes('vittoria trasferta');
-                const isPareggio = cleanMarket === 'x';
-
-                if (isVittoriaCasa) return g1 > g2 ? "V" : "P";
-                if (isVittoriaTrasferta) return g1 < g2 ? "V" : "P";
-                if (isPareggio) return g1 === g2 ? "V" : "P";
-                
-                if (cleanMarket.includes("1x2") && cleanMarket.includes("finale")) {
-                    if (cleanMarket.includes(" 1")) return g1 > g2 ? "V" : "P";
-                    if (cleanMarket.includes(" x")) return g1 === g2 ? "V" : "P";
-                    if (cleanMarket.includes(" 2")) return g1 < g2 ? "V" : "P";
-                }
-                else if (cleanMarket.includes("doppia chance")) {
-                    if (cleanMarket.includes("1x")) return g1 >= g2 ? "V" : "P";
-                    if (cleanMarket.includes("x2")) return g1 <= g2 ? "V" : "P";
-                    if (cleanMarket.includes("12")) return g1 !== g2 ? "V" : "P";
-                }
-                else if (cleanMarket.includes("oltre") || cleanMarket.includes("meno")) {
-                    const valueMatch = cleanMarket.match(/(\d+\.\d+)/);
-                    if (!valueMatch) return "";
-                    const value = parseFloat(valueMatch[1]);
-                    if (cleanMarket.includes("oltre")) return (g1 + g2) > value ? "V" : "P";
-                    if (cleanMarket.includes("meno")) return (g1 + g2) < value ? "V" : "P";
-                }
-                else if (cleanMarket.includes("gol/no gol") || cleanMarket.includes("entrambe le squadre segnano")) {
-                    const isGoal = cleanMarket.includes("si") || cleanMarket.includes("sì") || cleanMarket.includes("gol");
-                    const isNoGoal = cleanMarket.includes("no");
-                    if(isGoal) return g1 > 0 && g2 > 0 ? "V" : "P";
-                    if(isNoGoal) return g1 === 0 || g2 === 0 ? "V" : "P";
-                }
-                else if (cleanMarket.includes("pari/dispari")) {
-                    if (cleanMarket.includes("pari")) return (g1 + g2) % 2 === 0 ? "V" : "P";
-                    if (cleanMarket.includes("dispari")) return (g1 + g2) % 2 !== 0 ? "V" : "P";
-                }
-            } catch (e) {
-                console.error("Errore in calcolaEsito:", e);
-                return "";
-            }
-            return "";
-        }
-        
-        ui.tipsTableBody.addEventListener('click', (event) => {
-            const button = event.target.closest('button');
-            if (!button) return;
-
-            if (button.classList.contains('edit-btn')) {
-                const docId = button.dataset.id;
-                const homeTeam = button.dataset.hometeam;
-                const awayTeam = button.dataset.awayteam;
-                
-                ui.editDocId.value = docId;
-                ui.editModalMatchInfo.textContent = `${homeTeam} vs ${awayTeam}`;
-                ui.editForm.reset();
-                ui.editModal.classList.remove('hidden');
-            } else if (button.classList.contains('delete-row-btn')) {
-                const docId = button.dataset.id;
-                showModal('Conferma Cancellazione', 'Sei sicuro di voler cancellare questa partita?', 'error', async () => {
-                    await deleteDoc(doc(db, TIPS_COLLECTION, docId));
-                });
-            }
-        });
-
-        ui.editModalCloseBtnX.addEventListener('click', () => {
-            ui.editModal.classList.add('hidden');
-        });
-
-        ui.editModalSaveBtn.addEventListener('click', async () => {
-            const docId = ui.editDocId.value;
-            const ftScore = ui.editFtScore.value.trim();
-            const htScore = ui.editHtScore.value.trim();
-
-            if (!docId || !ftScore) {
-                showModal('Errore', 'Il risultato finale (FT) è obbligatorio.', 'error');
-                return;
-            }
-            if (!/^\d+-\d+$/.test(ftScore) || (htScore && !/^\d+-\d+$/.test(htScore))) {
-                 showModal('Errore', 'Formato risultato non valido. Usa il formato "X-Y" (es. 2-1).', 'error');
-                return;
-            }
-            
-            showLoaderOnButton(ui.editModalSaveBtn);
-            
-            const tipRef = doc(db, TIPS_COLLECTION, docId);
-            const tipDoc = await getDoc(tipRef);
-            const tipData = tipDoc.data();
-
-            const outcome = calcolaEsito(htScore, ftScore, tipData.market);
-            
-            await updateDoc(tipRef, {
-                resultFT: ftScore,
-                resultHT: htScore || null,
-                outcome: outcome,
-                status: 'completed'
-            });
-            
-            hideLoaderOnButton(ui.editModalSaveBtn, 'Salva Modifiche');
-            ui.editModal.classList.add('hidden');
-        });
-
-        function applyAllFilters() {
-            const startDate = ui.startDateInput.value ? new Date(ui.startDateInput.value) : null;
-            if (startDate) startDate.setHours(0, 0, 0, 0); 
-            
-            const endDate = ui.endDateInput.value ? new Date(ui.endDateInput.value) : null;
-            if (endDate) endDate.setHours(23, 59, 59, 999);
-            
-            currentFilters = {
-                startDate,
-                endDate,
-                campionati: getSelectedOptions('campionato-multiselect'),
-                mercati: getSelectedOptions('mercato-multiselect'),
-                esito: ui.esitoFilter.value,
-                minOdds: ui.minOddsInput.value ? parseFloat(ui.minOddsInput.value) : null,
-                maxOdds: ui.maxOddsInput.value ? parseFloat(ui.maxOddsInput.value) : null,
-            };
-            
-             document.querySelector('#campionato-multiselect button').textContent = `Campionati (${currentFilters.campionati.length || 'Tutti'})`;
-             document.querySelector('#mercato-multiselect button').textContent = `Mercati (${currentFilters.mercati.length || 'Tutti'})`;
-            
-            applyFiltersAndRender();
-        }
-        
-        ui.filterBtn.addEventListener('click', applyAllFilters);
-        document.body.addEventListener('change', e => {
-             if (e.target.closest('.multiselect-dropdown') || e.target.id === 'esito-filter') {
-                 applyAllFilters();
-             }
-        });
-
-        ui.clearFilterBtn.addEventListener('click', () => {
-            ui.startDateInput.value = '';
-            ui.endDateInput.value = '';
-            ui.minOddsInput.value = '';
-            ui.maxOddsInput.value = '';
-            ui.esitoFilter.value = '';
-            
-            document.querySelectorAll('.multiselect-dropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
-            applyAllFilters();
-        });
-        
-        ui.deleteAllBtn.addEventListener('click', () => {
-            showModal(
-                'Conferma Cancellazione Totale', 
-                'Sei assolutamente sicuro di voler cancellare TUTTI i pronostici dal database? L\'azione è irreversibile.', 
-                'error',
-                async () => {
-                    showLoaderOnButton(ui.deleteAllBtn);
-                    const snapshot = await getDocs(query(collection(db, TIPS_COLLECTION), where("userId", "==", userId)));
-                    const docsToDelete = snapshot.docs;
-                    const batchSize = 499;
-                    for (let i = 0; i < docsToDelete.length; i += batchSize) {
-                        const batch = writeBatch(db);
-                        const chunk = docsToDelete.slice(i, i + batchSize);
-                        chunk.forEach(docRef => batch.delete(docRef.ref));
-                        await batch.commit();
-                    }
-                    hideLoaderOnButton(ui.deleteAllBtn, 'Cancella Intero Database');
-                    showModal('Operazione Completata', 'Tutti i dati sono stati cancellati con successo.');
-                }
-            );
-        });
-        
-        ui.deleteFilteredBtn.addEventListener('click', () => {
-             const rows = document.getElementById('tips-table-body').querySelectorAll('tr');
-             const idsToDelete = Array.from(rows).map(tr => tr.querySelector('.edit-btn')?.dataset.id).filter(id => id);
-
-            if (idsToDelete.length === 0) {
-                 showModal('Azione non possibile', 'Nessun dato corrisponde ai filtri attuali. Impossibile cancellare.', 'error');
-                return;
-            }
-
-            showModal(
-                'Conferma Cancellazione Filtrati', 
-                `Sei sicuro di voler cancellare i ${idsToDelete.length} pronostici visualizzati? L'azione è irreversibile.`, 
-                'error',
-                async () => {
-                    showLoaderOnButton(ui.deleteFilteredBtn);
-                    const batchSize = 499;
-                    for (let i = 0; i < idsToDelete.length; i += batchSize) {
-                        const batch = writeBatch(db);
-                        const chunk = idsToDelete.slice(i, i + batchSize);
-                        chunk.forEach(id => batch.delete(doc(db, TIPS_COLLECTION, id)));
-                        await batch.commit();
-                    }
-                    hideLoaderOnButton(ui.deleteFilteredBtn, 'Cancella Solo Dati Visualizzati');
-                    showModal('Operazione Completata', `${idsToDelete.length} dati sono stati cancellati.`);
-                }
-            );
-        });
-
-        ui.exportCsvBtn.addEventListener('click', () => {
-             const rows = document.getElementById('tips-table-body').querySelectorAll('tr');
-             if(rows.length === 0 || (rows.length === 1 && rows[0].querySelectorAll('td').length > 1 && rows[0].querySelector('td').colSpan > 1)) {
-                 showModal('Esportazione non possibile', 'Nessun dato da esportare per i filtri selezionati.', 'error');
-                return;
-             }
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            const headers = ["Data", "Campionato", "Partita", "Mercato", "Quota Media", "Risultato FT", "Risultato HT", "Esito"];
-            csvContent += headers.join(",") + "\r\n";
-            
-            const filteredTipIds = new Set(Array.from(rows).map(tr => tr.querySelector('.edit-btn')?.dataset.id).filter(id => id));
-            const tipsToExport = allTips.filter(tip => filteredTipIds.has(tip.id));
-
-            tipsToExport.forEach(tip => {
-                const esitoText = tip.outcome === 'V' ? 'Vinto' : (tip.outcome === 'P' ? 'Perso' : 'N/D');
-                const partita = `${tip.homeTeam || ''} - ${tip.awayTeam || ''}`;
-                const rowData = [
-                    new Date(tip.matchDate.seconds * 1000).toLocaleString('it-IT'),
-                    tip.campionato || '',
-                    partita,
-                    tip.market || '',
-                    tip.odds || '',
-                    tip.resultFT || '',
-                    tip.resultHT || '',
-                    esitoText
-                ];
-                const row = rowData.map(val => `"${String(val).replace(/"/g, '""')}"`);
-                csvContent += row.join(",") + "\r\n";
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "pronostici_filtrati.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-
         // --- Logica Analisi Secondo Tempo ---
         ui.stImportBtn.addEventListener('click', () => {
             const file = ui.stFileUploader.files[0];
@@ -1109,14 +240,15 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: (results) => {
-                    stAnalyzedData = results.data.map(row => ({
+                    stAnalyzedData = results.data.map((row, index) => ({
+                        id: index, // Aggiungo un ID univoco per riga
                         data: row['Data'],
                         lega: row['Lega'],
                         partita: row['Partita'],
                         risultatoFT: row['Risultato'],
                         esito1T: row['Esito (12)'],
-                        risultatoHT: null, // da trovare
-                        esito2T: 'PENDING' // da calcolare
+                        risultatoHT: null,
+                        esito2T: 'PENDING'
                     }));
                     
                     const totali = stAnalyzedData.length;
@@ -1144,28 +276,29 @@
 
             for(let i=0; i<stAnalyzedData.length; i++) {
                 const row = stAnalyzedData[i];
-                if (row.esito1T === 'VINTA') {
+                if (row.esito1T === 'VINTA' && row.esito2T === 'PENDING') {
                     const [home, away] = row.partita.split(' - ');
                     const query = `Qual è stato il risultato del primo tempo (HT) della partita di calcio (${row.lega}) tra ${home} e ${away} giocata il ${new Date(row.data).toLocaleDateString('it-IT')}?`;
                     try {
                         const result = await callGeminiAPI(query);
                         row.risultatoHT = result.ht_score || 'N/D';
-                        if (result.ht_score) {
+                        if (result.ht_score && /^\d+-\d+$/.test(result.ht_score)) {
                            const [ht1, ht2] = result.ht_score.split('-').map(Number);
                            const [ft1, ft2] = row.risultatoFT.split('-').map(Number);
                            row.esito2T = ((ft1 - ht1) + (ft2 - ht2)) > 0 ? 'VINTA' : 'PERSA';
                         } else {
-                           row.esito2T = 'PENDING';
+                           row.esito2T = 'N/D';
                         }
                     } catch (e) {
                          console.error("Errore Gemini per 2T:", e);
-                         row.esito2T = 'PENDING';
+                         row.esito2T = 'N/D';
                     }
-                } else { // esito1T === 'PERSA'
+                } else if (row.esito1T === 'PERSA') {
                     row.risultatoHT = '0-0';
                     row.esito2T = row.risultatoFT !== '0-0' ? 'VINTA' : 'PERSA';
                 }
-                renderStTable(stAnalyzedData); // Aggiorna la tabella riga per riga
+                renderStTable(stAnalyzedData);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Pausa per non sovraccaricare l'API
             }
             hideLoaderOnButton(ui.stCalculateBtn, 'Calcola Risultati 2T');
             ui.stExportBtn.disabled = false;
@@ -1174,10 +307,12 @@
         
          function renderStTable(data) {
             ui.stTableBody.innerHTML = '';
-            data.forEach(m => {
+            data.forEach((m, index) => {
                 let esito2TClass = 'bg-gray-200 text-gray-800';
                 if (m.esito2T === 'VINTA') esito2TClass = 'win';
                 if (m.esito2T === 'PERSA') esito2TClass = 'lose';
+                if (m.esito2T === 'N/D') esito2TClass = 'pending';
+
 
                 const esito1TClass = m.esito1T === 'VINTA' ? 'win' : 'lose';
 
@@ -1189,6 +324,16 @@
                         <td class="table-cell text-center font-mono">${m.risultatoHT || '...'}</td>
                         <td class="table-cell text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${esito1TClass}">${m.esito1T}</span></td>
                         <td class="table-cell text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${esito2TClass}">${m.esito2T}</span></td>
+                        <td class="table-cell text-center">
+                             <div class="flex justify-center items-center gap-1">
+                                <button class="edit-st-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-index="${index}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <button class="delete-st-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-index="${index}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                 `;
                 ui.stTableBody.innerHTML += row;
@@ -1217,6 +362,102 @@
             link.click();
             document.body.removeChild(link);
         });
+
+        ui.stTableBody.addEventListener('click', (event) => {
+            const button = event.target.closest('button');
+            if (!button) return;
+            const rowIndex = parseInt(button.dataset.index);
+            const rowData = stAnalyzedData[rowIndex];
+            
+            if (button.classList.contains('edit-st-btn')) {
+                 ui.editRowIndex.value = rowIndex;
+                 ui.editModalMatchInfo.textContent = rowData.partita;
+                 ui.editFtScore.value = rowData.risultatoFT || '';
+                 ui.editHtScore.value = rowData.risultatoHT || '';
+                 ui.editModal.classList.remove('hidden');
+            } else if (button.classList.contains('delete-st-btn')) {
+                showModal('Conferma Cancellazione', `Sei sicuro di voler cancellare la partita: ${rowData.partita}?`, 'error', () => {
+                    stAnalyzedData.splice(rowIndex, 1);
+                    renderStTable(stAnalyzedData);
+                });
+            }
+        });
+
+        ui.editModalSaveBtn.addEventListener('click', () => {
+            const rowIndex = parseInt(ui.editRowIndex.value);
+            const ftScore = ui.editFtScore.value.trim();
+            const htScore = ui.editHtScore.value.trim();
+
+            if (!/^\d+-\d+$/.test(ftScore) || (htScore && !/^\d+-\d+$/.test(htScore))) {
+                 showModal('Errore', 'Formato risultato non valido. Usa il formato "X-Y" (es. 2-1).', 'error');
+                return;
+            }
+
+            const row = stAnalyzedData[rowIndex];
+            row.risultatoFT = ftScore;
+            row.risultatoHT = htScore;
+
+            if (row.esito1T === 'VINTA') {
+                if (row.risultatoHT && row.risultatoFT) {
+                   const [ht1, ht2] = row.risultatoHT.split('-').map(Number);
+                   const [ft1, ft2] = row.risultatoFT.split('-').map(Number);
+                   row.esito2T = ((ft1 - ht1) + (ft2 - ht2)) > 0 ? 'VINTA' : 'PERSA';
+                }
+            } else { // PERSA
+                 row.esito2T = row.risultatoFT !== '0-0' ? 'VINTA' : 'PERSA';
+            }
+            
+            renderStTable(stAnalyzedData);
+            ui.editModal.classList.add('hidden');
+        });
+        
+        async function callGeminiAPI(userQuery, retries = 3) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+
+            const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere la chiave "ht_score". Se trovi il risultato, valorizzalo come stringa (es. "1-0"). Se non lo trovi, il valore deve essere null. Esempio: {"ht_score": "1-0"}. Non aggiungere mai altro testo.`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+            
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 503 && i < retries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, (i + 1) * 2000));
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (!text) return { ht_score: null };
+                    
+                    try {
+                        const cleanText = text.replace(/```json\n?|\n?```/g, '');
+                        return JSON.parse(cleanText);
+                    } catch (e) {
+                         console.error("Errore nel parsing del JSON:", text);
+                         return { ht_score: null };
+                    }
+                } catch (error) {
+                    console.error(`Errore nel tentativo ${i + 1}:`, error);
+                    if (i === retries - 1) throw error;
+                }
+            }
+             throw new Error("Tutti i tentativi di chiamata API sono falliti.");
+        }
 
 
     </script>
