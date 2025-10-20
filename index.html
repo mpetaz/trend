@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analisi Secondo Tempo</title>
+    <title>Analisi Secondo Tempo (V10.2 - Parsing Streaming)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
@@ -29,7 +29,6 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Modal Generico -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white p-6 rounded-lg shadow-xl text-left max-w-lg w-full m-4">
             <div class="flex justify-between items-start">
@@ -44,8 +43,7 @@
         </div>
     </div>
     
-     <!-- Modal Modifica Risultato -->
-    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+     <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white p-6 rounded-lg shadow-xl text-left max-w-md w-full m-4">
             <div class="flex justify-between items-start">
                 <h3 class="text-xl font-bold text-gray-800">Modifica Risultato</h3>
@@ -53,7 +51,7 @@
             </div>
             <p id="edit-modal-match-info" class="text-md text-gray-600 mt-2 mb-4"></p>
             <form id="edit-form">
-                <input type="hidden" id="edit-row-index">
+                <input type="hidden" id="edit-row-id">
                 <div class="mb-4">
                     <label for="edit-ft-score" class="block text-sm font-medium text-gray-700">Risultato Finale (FT)</label>
                     <input type="text" id="edit-ft-score" placeholder="Es. 2-1" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
@@ -81,7 +79,7 @@
              <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Caricamento Dati</h2>
              <div class="flex flex-col md:flex-row gap-6 items-center">
                  <div class="flex-1 w-full">
-                    <label for="st-file-uploader" class="block text-sm font-medium text-gray-700 mb-1">Carica il tuo file CSV "Totali Risultati"</label>
+                    <label for="st-file-uploader" class="block text-sm font-medium text-gray-700 mb-1">Carica il tuo file CSV "0.5HT"</label>
                     <input type="file" id="st-file-uploader" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
                 </div>
                 <button id="st-import-btn" class="w-full md:w-auto bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 shadow-sm flex items-center gap-2 justify-center">
@@ -98,15 +96,15 @@
                     <dd id="st-total-partite" class="mt-1 text-3xl font-semibold tracking-tight text-blue-600">0</dd>
                 </div>
                 <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                    <dt class="truncate text-sm font-medium text-gray-500">Vinte (1T)</dt>
+                    <dt class="truncate text-sm font-medium text-gray-500">Vinte (0.5HT)</dt>
                     <dd id="st-partite-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-green-600">0</dd>
                 </div>
                 <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                    <dt class="truncate text-sm font-medium text-gray-500">Perse (1T)</dt>
+                    <dt class="truncate text-sm font-medium text-gray-500">Perse (0.5HT)</dt>
                     <dd id="st-partite-perse" class="mt-1 text-3xl font-semibold tracking-tight text-red-600">0</dd>
                 </div>
                 <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                    <dt class="truncate text-sm font-medium text-gray-500">% Vinte (1T)</dt>
+                    <dt class="truncate text-sm font-medium text-gray-500">% Vinte (0.5HT)</dt>
                     <dd id="st-percentuale-vinte" class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">0.0%</dd>
                 </div>
             </div>
@@ -129,9 +127,10 @@
                             <tr>
                                 <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Data</th>
                                 <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Partita</th>
+                                <th class="table-cell text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lega</th>
                                 <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ris. FT</th>
                                 <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ris. HT</th>
-                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito 1T</th>
+                                <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito 0.5HT</th>
                                 <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Esito 2T</th>
                                 <th class="table-cell text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Azioni</th>
                             </tr>
@@ -143,12 +142,13 @@
         </div>
     </div>
 
+    
     <script type="module">
         // --- CONFIGURAZIONE CHIAVE API ---
         const API_KEY = "AIzaSyB9UHe0WirATu8KhHdH7dNdmcbhnaKKy6I";
         
         // --- Variabili Globali ---
-        let stAnalyzedData = [];
+        let stAnalyzedData = []; // Cache in memoria (NO DB)
 
         // --- Elementi del DOM ---
         const ui = {
@@ -162,6 +162,7 @@
             stTableBody: document.getElementById('st-table-body'),
             stExportBtn: document.getElementById('st-export-btn'),
             stCalculateBtn: document.getElementById('st-calculate-btn'),
+            // stClearDbBtn non serve più
             modal: document.getElementById('modal'),
             modalTitle: document.getElementById('modal-title'),
             modalBody: document.getElementById('modal-body'),
@@ -173,7 +174,7 @@
             editModalCloseBtnX: document.getElementById('edit-modal-close-btn-x'),
             editModalSaveBtn: document.getElementById('edit-modal-save-btn'),
             editForm: document.getElementById('edit-form'),
-            editRowIndex: document.getElementById('edit-row-index'),
+            editRowId: document.getElementById('edit-row-id'),
             editFtScore: document.getElementById('edit-ft-score'),
             editHtScore: document.getElementById('edit-ht-score'),
         };
@@ -202,9 +203,16 @@
             ui.modalTitle.textContent = title;
             ui.modalBody.innerHTML = message;
             
-            ui.modalConfirmBtn.onclick = onConfirm || hideModal;
-            ui.modalConfirmBtn.textContent = onConfirm ? 'Conferma' : 'OK';
-            ui.modalCancelBtn.style.display = onConfirm ? 'inline-block' : 'none';
+            ui.modalCancelBtn.classList.add('hidden');
+            ui.modalConfirmBtn.onclick = () => hideModal();
+            
+            if (onConfirm) {
+                ui.modalCancelBtn.classList.remove('hidden');
+                ui.modalConfirmBtn.onclick = () => {
+                    hideModal();
+                    onConfirm();
+                };
+            }
 
             const titleBaseClasses = 'text-xl font-bold';
             const buttonBaseClasses = 'text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 shadow-sm';
@@ -227,8 +235,11 @@
         ui.modalConfirmBtn.addEventListener('click', hideModal);
         ui.modalCancelBtn.addEventListener('click', hideModal);
         ui.modalCloseBtnX.addEventListener('click', hideModal);
+        
 
-        // --- Logica Analisi Secondo Tempo ---
+        // --- Logica Principale ---
+        
+        // --- BLOCCO MODIFICATO: Parsing Streaming con `step` ---
         ui.stImportBtn.addEventListener('click', () => {
             const file = ui.stFileUploader.files[0];
             if (!file) {
@@ -236,56 +247,121 @@
                 return;
             }
             showLoaderOnButton(ui.stImportBtn);
+            
+            stAnalyzedData = []; // Resetta l'array ad ogni caricamento
+            let isFirstRow = true; // Per loggare le colonne solo una volta
+
+            console.log("Avvio parsing streaming...");
+            
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
-                complete: (results) => {
-                    stAnalyzedData = results.data.map((row, index) => ({
-                        id: index, // Aggiungo un ID univoco per riga
-                        data: row['Data'],
-                        lega: row['Lega'],
-                        partita: row['Partita'],
-                        risultatoFT: row['Risultato'],
-                        esito1T: row['Esito (12)'],
-                        risultatoHT: null,
-                        esito2T: 'PENDING'
-                    }));
+                // --- NUOVA OPZIONE: STEP ---
+                step: function(results, parser) {
+                    const row = results.data;
                     
-                    const totali = stAnalyzedData.length;
-                    const vinte = stAnalyzedData.filter(r => r.esito1T === 'VINTA').length;
-                    const perse = totali - vinte;
-                    const winrate = totali > 0 ? (vinte / totali) * 100 : 0;
-                    
-                    ui.stTotalPartite.textContent = totali;
-                    ui.stPartiteVinte.textContent = vinte;
-                    ui.stPartitePerse.textContent = perse;
-                    ui.stPercentualeVinte.textContent = `${winrate.toFixed(1)}%`;
-                    ui.stPercentualeVinte.className = `mt-1 text-3xl font-semibold tracking-tight ${winrate >= 80 ? 'text-green-600' : 'text-red-600'}`;
+                    if(isFirstRow) {
+                        console.log("Nomi colonne visti da PapaParse:", Object.keys(row));
+                        isFirstRow = false;
+                    }
 
-                    renderStTable(stAnalyzedData);
-                    ui.stResultsContainer.classList.remove('hidden');
+                    // --- PULIZIA DATI RIGA PER RIGA ---
+                    // Sostituisce 0,5HT nel nome colonna (se presente) e nel valore
+                    let esitoValue = row['Esito (0,5HT)'] || row['Esito (0.5HT)'] || 'N/D';
+                    
+                    // Rimuove da qualsiasi campo se dovesse apparire
+                    for (const key in row) {
+                        if (typeof row[key] === 'string') {
+                            row[key] = row[key].replace(/\\s?/g, '').trim();
+                        }
+                    }
+
+                    if (row['Data'] && row['Partita']) {
+                        // Usa Data+Partita come ID base, aggiunge l'indice per unicità assoluta
+                        const uniqueId = `${row['Data']}-${row['Partita']}-${stAnalyzedData.length}`;
+
+                        stAnalyzedData.push({
+                            id: uniqueId,
+                            data: row['Data'],
+                            lega: row['Lega'],
+                            partita: row['Partita'],
+                            risultatoFT: row['Risultato'] || '',
+                            esito1T: esitoValue, 
+                            risultatoHT: null,
+                            esito2T: 'PENDING'
+                        });
+                    } else {
+                        console.warn("Riga saltata per dati mancanti:", row);
+                    }
+                },
+                // --- FUNZIONE COMPLETE: Chiamata alla fine dello streaming ---
+                complete: function() {
+                    console.log("Parsing streaming COMPLETATO.", stAnalyzedData.length, "righe processate.");
+                    
+                    if (stAnalyzedData.length === 0) {
+                        showModal('Errore di Caricamento', "Nessun dato valido trovato nel file CSV.", 'error');
+                    } else {
+                        updateStats();
+                        renderStTable(stAnalyzedData);
+                        ui.stResultsContainer.classList.remove('hidden');
+                        showModal('Caricamento Riuscito', `Caricate ${stAnalyzedData.length} partite.`);
+                    }
+                    
                     hideLoaderOnButton(ui.stImportBtn, 'Carica e Analizza 1T');
                     ui.stFileUploader.value = '';
-                }
+                },
+                // --- FUNZIONE ERROR: Gestisce errori durante lo streaming ---
+                error: function(error, file) {
+                    console.error("Errore PapaParse (streaming):", error);
+                    showModal('Errore di Parsing', `Impossibile analizzare il file CSV: ${error.message}`, 'error');
+                    hideLoaderOnButton(ui.stImportBtn, 'Carica e Analizza 1T');
+                },
+                encoding: "windows-1252" // Prova con questa codifica
             });
         });
+        // --- FINE BLOCCO MODIFICATO ---
 
+
+        // --- Logica Calcolo 2T (V11 - 0.5HT Ottimizzata) ---
         ui.stCalculateBtn.addEventListener('click', async () => {
             showLoaderOnButton(ui.stCalculateBtn);
             ui.stExportBtn.disabled = true;
+            
+            let googleCalls = 0;
+            let rowsToUpdate = 0;
 
             for(let i=0; i<stAnalyzedData.length; i++) {
                 const row = stAnalyzedData[i];
-                if (row.esito1T === 'VINTA' && row.esito2T === 'PENDING') {
+                let rowUpdated = false;
+
+                // 1. LOGICA PERSA (0-0 HT)
+                if (row.esito1T === 'PERSA' && row.esito2T === 'PENDING') {
+                    row.risultatoHT = '0-0';
+                    row.esito2T = (row.risultatoFT && row.risultatoFT !== '0-0') ? 'VINTA' : 'PERSA';
+                    rowUpdated = true;
+                
+                // 2. LOGICA VINTA 1-0 / 0-1 (HT = FT)
+                } else if (row.esito1T === 'VINTA' && (row.risultatoFT === '1-0' || row.risultatoFT === '0-1') && row.esito2T === 'PENDING') {
+                    row.risultatoHT = row.risultatoFT;
+                    row.esito2T = 'PERSA'; // Gol 2T = 0
+                    rowUpdated = true;
+
+                // 3. LOGICA VINTA (ALTRI RISULTATI) -> Cerca su Google
+                } else if (row.esito1T === 'VINTA' && row.esito2T === 'PENDING') {
                     const [home, away] = row.partita.split(' - ');
-                    const query = `Qual è stato il risultato del primo tempo (HT) della partita di calcio (${row.lega}) tra ${home} e ${away} giocata il ${new Date(row.data).toLocaleDateString('it-IT')}?`;
+                    const dataPartita = new Date(row.data).toLocaleDateString('it-IT');
+                    const query = `risultato primo tempo ${home} ${away} ${dataPartita} ${row.lega}`;
+                    googleCalls++;
+                    
                     try {
                         const result = await callGeminiAPI(query);
                         row.risultatoHT = result.ht_score || 'N/D';
-                        if (result.ht_score && /^\d+-\d+$/.test(result.ht_score)) {
-                           const [ht1, ht2] = result.ht_score.split('-').map(Number);
+                        
+                        if (row.risultatoHT && /^\d+-\d+$/.test(row.risultatoHT) && row.risultatoFT && /^\d+-\d+$/.test(row.risultatoFT)) {
+                           const [ht1, ht2] = row.risultatoHT.split('-').map(Number);
                            const [ft1, ft2] = row.risultatoFT.split('-').map(Number);
-                           row.esito2T = ((ft1 - ht1) + (ft2 - ht2)) > 0 ? 'VINTA' : 'PERSA';
+                           const stGoals = (ft1 - ht1) + (ft2 - ht2);
+                           row.esito2T = stGoals > 0 ? 'VINTA' : 'PERSA';
                         } else {
                            row.esito2T = 'N/D';
                         }
@@ -293,43 +369,49 @@
                          console.error("Errore Gemini per 2T:", e);
                          row.esito2T = 'N/D';
                     }
-                } else if (row.esito1T === 'PERSA') {
-                    row.risultatoHT = '0-0';
-                    row.esito2T = row.risultatoFT !== '0-0' ? 'VINTA' : 'PERSA';
+                    rowUpdated = true;
+                    await new Promise(resolve => setTimeout(resolve, 500)); // Pausa
                 }
-                renderStTable(stAnalyzedData);
-                await new Promise(resolve => setTimeout(resolve, 500)); // Pausa per non sovraccaricare l'API
+                
+                if (rowUpdated) {
+                    rowsToUpdate++;
+                    // Non serve salvare nel DB qui perché non c'è DB
+                    renderStTable(stAnalyzedData); // Aggiorna la UI
+                }
             }
+            
             hideLoaderOnButton(ui.stCalculateBtn, 'Calcola Risultati 2T');
             ui.stExportBtn.disabled = false;
-            showModal('Analisi Completata', 'Il calcolo dei risultati del secondo tempo è terminato.');
+            showModal('Analisi Completata', `Calcolo terminato. ${rowsToUpdate} righe aggiornate. Sono state effettuate ${googleCalls} nuove ricerche.`);
         });
         
          function renderStTable(data) {
             ui.stTableBody.innerHTML = '';
-            data.forEach((m, index) => {
+            data.forEach((m) => {
                 let esito2TClass = 'bg-gray-200 text-gray-800';
                 if (m.esito2T === 'VINTA') esito2TClass = 'win';
                 if (m.esito2T === 'PERSA') esito2TClass = 'lose';
                 if (m.esito2T === 'N/D') esito2TClass = 'pending';
 
-
-                const esito1TClass = m.esito1T === 'VINTA' ? 'win' : 'lose';
+                let esito1TClass = 'pending';
+                if (m.esito1T === 'VINTA') esito1TClass = 'win';
+                if (m.esito1T === 'PERSA') esito1TClass = 'lose';
 
                 const row = `
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50" data-id="${m.id}">
                         <td class="table-cell text-sm text-gray-600">${new Date(m.data).toLocaleDateString('it-IT')}</td>
                         <td class="table-cell font-medium text-gray-900">${m.partita}</td>
+                        <td class="table-cell text-sm text-gray-600">${m.lega}</td>
                         <td class="table-cell text-center font-mono">${m.risultatoFT}</td>
                         <td class="table-cell text-center font-mono">${m.risultatoHT || '...'}</td>
                         <td class="table-cell text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${esito1TClass}">${m.esito1T}</span></td>
                         <td class="table-cell text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${esito2TClass}">${m.esito2T}</span></td>
                         <td class="table-cell text-center">
                              <div class="flex justify-center items-center gap-1">
-                                <button class="edit-st-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-index="${index}">
+                                <button class="edit-st-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${m.id}">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                                 </button>
-                                <button class="delete-st-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-index="${index}">
+                                <button class="delete-st-btn p-2 rounded-full hover:bg-gray-200 transition-colors" data-id="${m.id}">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
                                 </button>
                             </div>
@@ -366,11 +448,14 @@
         ui.stTableBody.addEventListener('click', (event) => {
             const button = event.target.closest('button');
             if (!button) return;
-            const rowIndex = parseInt(button.dataset.index);
+            const rowId = button.dataset.id;
+            const rowIndex = stAnalyzedData.findIndex(r => r.id === rowId);
+            if (rowIndex === -1) return; 
+            
             const rowData = stAnalyzedData[rowIndex];
             
             if (button.classList.contains('edit-st-btn')) {
-                 ui.editRowIndex.value = rowIndex;
+                 ui.editRowId.value = rowId;
                  ui.editModalMatchInfo.textContent = rowData.partita;
                  ui.editFtScore.value = rowData.risultatoFT || '';
                  ui.editHtScore.value = rowData.risultatoHT || '';
@@ -378,13 +463,30 @@
             } else if (button.classList.contains('delete-st-btn')) {
                 showModal('Conferma Cancellazione', `Sei sicuro di voler cancellare la partita: ${rowData.partita}?`, 'error', () => {
                     stAnalyzedData.splice(rowIndex, 1);
+                    // Non serve salvare nel DB
                     renderStTable(stAnalyzedData);
+                    updateStats();
                 });
             }
         });
+        
+        function updateStats() {
+            const totali = stAnalyzedData.length;
+            const vinte = stAnalyzedData.filter(r => r.esito1T === 'VINTA').length;
+            const perse = totali - vinte;
+            const winrate = totali > 0 ? (vinte / totali) * 100 : 0;
+            
+            ui.stTotalPartite.textContent = totali;
+            ui.stPartiteVinte.textContent = vinte;
+            ui.stPartitePerse.textContent = perse;
+            ui.stPercentualeVinte.textContent = `${winrate.toFixed(1)}%`;
+        }
 
-        ui.editModalSaveBtn.addEventListener('click', () => {
-            const rowIndex = parseInt(ui.editRowIndex.value);
+        ui.editModalSaveBtn.addEventListener('click', () => { // Rimosso async
+            const rowId = ui.editRowId.value;
+            const rowIndex = stAnalyzedData.findIndex(r => r.id === rowId);
+            if (rowIndex === -1) return;
+
             const ftScore = ui.editFtScore.value.trim();
             const htScore = ui.editHtScore.value.trim();
 
@@ -397,24 +499,27 @@
             row.risultatoFT = ftScore;
             row.risultatoHT = htScore;
 
-            if (row.esito1T === 'VINTA') {
-                if (row.risultatoHT && row.risultatoFT) {
-                   const [ht1, ht2] = row.risultatoHT.split('-').map(Number);
-                   const [ft1, ft2] = row.risultatoFT.split('-').map(Number);
-                   row.esito2T = ((ft1 - ht1) + (ft2 - ht2)) > 0 ? 'VINTA' : 'PERSA';
-                }
-            } else { // PERSA
-                 row.esito2T = row.risultatoFT !== '0-0' ? 'VINTA' : 'PERSA';
+            // Ricalcola Esito 2T
+            if (row.risultatoHT && row.risultatoFT) {
+               const [ht1, ht2] = row.risultatoHT.split('-').map(Number);
+               const [ft1, ft2] = row.risultatoFT.split('-').map(Number);
+               const stGoals = (ft1 - ht1) + (ft2 - ht2);
+               row.esito2T = stGoals > 0 ? 'VINTA' : 'PERSA';
+            } else {
+                row.esito2T = 'N/D';
             }
             
+            // Non serve salvare nel DB
             renderStTable(stAnalyzedData);
             ui.editModal.classList.add('hidden');
         });
         
+        // Non serve più il listener per svuotare il DB
+        
         async function callGeminiAPI(userQuery, retries = 3) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
 
-            const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere la chiave "ht_score". Se trovi il risultato, valorizzalo come stringa (es. "1-0"). Se non lo trovi, il valore deve essere null. Esempio: {"ht_score": "1-0"}. Non aggiungere mai altro testo.`;
+            const systemPrompt = `Sei un assistente per dati sportivi. Rispondi SEMPRE E SOLO con un oggetto JSON. Il JSON deve avere la chiave "ht_score". Se trovi il risultato del primo tempo (Half Time), valorizzalo come stringa (es. "1-0"). Se non lo trovi, il valore deve essere null. Esempio: {"ht_score": "1-0"}. Non aggiungere mai altro testo.`;
             
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
@@ -459,8 +564,6 @@
              throw new Error("Tutti i tentativi di chiamata API sono falliti.");
         }
 
-
     </script>
 </body>
 </html>
-
